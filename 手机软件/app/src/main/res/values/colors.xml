@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="dashboard_primary">#0A63B8</color>
+    <color name="dashboard_on_primary">#F8FBFF</color>
+    <color name="dashboard_background_top">#E7F2FF</color>
+    <color name="dashboard_background_bottom">#F7FAFD</color>
+    <color name="dashboard_hero_start">#0C5EAA</color>
+    <color name="dashboard_hero_end">#3E9AEF</color>
+    <color name="dashboard_card_surface">#FFFFFF</color>
+    <color name="dashboard_card_surface_alt">#F3F7FC</color>
+    <color name="dashboard_card_border">#D9E5F2</color>
+    <color name="dashboard_text_primary">#102033</color>
+    <color name="dashboard_text_secondary">#5E6E81</color>
+    <color name="dashboard_text_inverse">#F6FBFF</color>
+    <color name="dashboard_accent">#156FC7</color>
+    <color name="dashboard_accent_soft">#DDEBFA</color>
+    <color name="dashboard_success">#1B8D69</color>
+    <color name="dashboard_success_soft">#DDF6ED</color>
+    <color name="dashboard_warning">#A76408</color>
+    <color name="dashboard_warning_soft">#FFF0D8</color>
+    <color name="dashboard_log_background">#101822</color>
+    <color name="dashboard_log_text">#D3E5F7</color>
+    <color name="dashboard_divider">#E4ECF5</color>
+</resources>

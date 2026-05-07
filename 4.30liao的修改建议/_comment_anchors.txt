@@ -1,0 +1,42 @@
+--- Comment #56 anchor ---
+benefits
+
+--- Comment #57 anchor ---
+Posture maintenance
+
+--- Comment #58 anchor ---
+During deep focus on working tasks, office workers experience a degeneration into a slouched, non-neutral position without conscious awareness [19].
+
+--- Comment #66 anchor ---
+Part I:
+
+--- Comment #67 anchor ---
+Placement
+
+--- Comment #70 anchor ---
+Vision-based human pose estimation (HPE) has matured into an effective approach for full-body tracking and joint angle estimation, using Convolutional Neural Networks (CNNs) on RGB images, depth sensors (e.g., Kinect), or multimodal RGB-D data [23], [24], [25], [26]. Early and ongoing work demonstrates that depth images from devices such as the Kinect provide a practical basis for estimating 3D pose by combining a heatmap-based 2D key point predictor with a depth-aware regression stage or a depth-informed model fitting step [26], [27], [28]. Some studies demonstrate that sensorized seating systems capture contact area, average and peak pressures that reflect loading patterns during sitting [29]. For instance, early work where chairs equipped with surface-mounted pressure distribution sensors were applied to solving the problem of sitting posture classification [29], [30].
+
+--- Comment #72 anchor ---
+Nevertheless, the application paradigm of these clinical systems is exclusively designed for laboratory-based data logging, combined with their high cost, limits their ecological utility for scalable, real-time autonomous feedback in daily life [22].
+
+--- Comment #117 anchor ---
+A primary objective
+
+--- Comment #120 anchor ---
+D5SCL
+
+--- Comment #122 anchor ---
+Figure 3.4 Reference sensor placement for pelvic-rotation monitoring (Source: Liao et al [34])
+
+--- Comment #123 anchor ---
+Embedded Software &amp; On-Device Processing
+
+--- Comment #129 anchor ---
+The separation of data collection into mobile and PC tools was useful in practice. During the field study, carrying a phone was realistic while carrying a laptop through the whole route was not easy.
+
+--- Comment #130 anchor ---
+Each file is named using the recording start time, for example imu_data_20260416_203334.csv
+
+--- Comment #131 anchor ---
+age value
+

@@ -1,0 +1,169 @@
+\chapter{Implementation}\label{ch:implementation}
+
+This chapter describes the supporting software platform used to acquire labelled IMU data and the embedded classifier implementation that runs on the XIAO nRF54L15 Sense. The implementation was designed around one data pipeline: the wearable samples the IMU, transmits the same six-channel stream to the acquisition tools during experiments, and later runs a reduced version of the trained detector on-device. Keeping the packet format shared across tools reduces the chance that bench testing, field collection, and embedded deployment describe different signals. The evaluation protocol and results are separated into Chapters~\ref{ch:evaluation} and~\ref{ch:results}.
+
+Two acquisition tools were developed for different stages of the same workflow (Table~\ref{tab:software_roles}): an Android application for mobile field collection, and a PC receiver for bench tests, debugging, and visualisation.
+
+For reproducibility, the Android application evaluated in this thesis is package \texttt{com.l1172.bleimuandroid}, versionName \texttt{1.0.1}, versionCode \texttt{2}, built with compile SDK 34 and target SDK 34. The PC receiver is the Python BLE receiver using \texttt{bleak} \(\ge 0.20.0\), PyQt5 \(\ge 5.15.0\), PyQtChart \(\ge 5.15.0\), and \texttt{openpyxl} \(\ge 3.0.0\). The deployable haptic firmware is the Zephyr/PlatformIO XIAO nRF54L15 build with the main thread stack set to 4{,}096 bytes.
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \caption{Roles of the two data-collection tools.}
+    \label{tab:software_roles}
+    \begin{tabularx}{\linewidth}{lX}
+        \toprule
+        Tool & Main role \\
+        \midrule
+        Android app & Mobile field collection, two-device BLE connection, real-time packet monitoring, GPS recording, per-device activity labelling \\
+        PC receiver & Researcher-side BLE connection, live visualisation, signal inspection, CSV recording, Excel export \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\section{BLE Data Interface}\label{sec:ble_data_interface}
+
+Both the Android application and the PC tool use the same BLE interface. The wearable advertises as \texttt{ble-imu-sensor}; the receiver subscribes to service UUID \texttt{12345678-1234-5678-1234-56789abcdef0} and notification characteristic UUID \texttt{12345678-1234-5678-1234-56789abcdef1}. Each notification carries a 12-byte payload, decoded as six little-endian signed 16-bit integers for three-axis acceleration and angular velocity (Table~\ref{tab:ble_payload_format}). In the BLE streaming firmware, acceleration is encoded in \(10^{-3}\,\si{\meter\per\second\squared}\) units and angular velocity is encoded in milliradians per second. Both receivers therefore divide acceleration by 1000 to obtain \si{\meter\per\second\squared}, and multiply gyroscope values by \(180/(\pi\cdot 10^3) \approx 0.0573\) to obtain \si{\degree\per\second}.
+
+The payload is intentionally compact. A 12-byte notification contains only the six motion values and leaves timestamping to the receiving device during logging. This keeps wireless transmission simple and avoids a larger packet format while still preserving all channels needed for the classifier. During embedded inference, the firmware reads acceleration in \si{\meter\per\second\squared} and angular velocity in radians per second from the Zephyr sensor API, then converts angular velocity to \si{\degree\per\second} before feature extraction so that the deployed model follows the same unit convention as the logged training data.
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \caption{BLE notification payload format.}
+    \label{tab:ble_payload_format}
+    \begin{tabularx}{\linewidth}{llX}
+        \toprule
+        Bytes & Field & Description \\
+        \midrule
+        0--1   & \texttt{accel\_x} & Raw acceleration $X$ \\
+        2--3   & \texttt{accel\_y} & Raw acceleration $Y$ \\
+        4--5   & \texttt{accel\_z} & Raw acceleration $Z$ \\
+        6--7   & \texttt{gyro\_x}  & Raw angular velocity $X$ \\
+        8--9   & \texttt{gyro\_y}  & Raw angular velocity $Y$ \\
+        10--11 & \texttt{gyro\_z}  & Raw angular velocity $Z$ \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\section{Android Field Collection}\label{sec:android_app}
+
+The Android application scans for nearby wearable devices, connects over BLE, subscribes to the IMU notification characteristic, and records the latest acceleration and gyroscope values for each connected device. It can connect to two wearables simultaneously, which was useful for multi-device field sessions. During recording, the application writes packets to a comma-separated values (CSV) file in the phone's external documents directory. A foreground service keeps BLE and Global Positioning System (GPS) collection active when the screen is locked. GPS samples are obtained from Android's fused location provider; each IMU row is stamped with \texttt{gps\_age\_ms}, the time difference between the IMU packet and the most recent GPS fix.
+
+The application supports per-device activity annotation. When recording is active, each connected wearable has its own label controls; the selected label is written into every CSV row received from that device until the label is stopped. Default labels are configurable, so the researcher can match the protocol (for example, static sitting, pelvic rotation, walking, or transport segments). Each annotation is assigned a segment identifier and a start timestamp, allowing later processing to recover labelled time segments instead of treating each row as an isolated sample.
+
+This annotation design is important for the field protocol. The labels are not inferred automatically by the phone; they are entered during the session and later used to select clean seated segments. Recording the label on every row makes the files easy to process, while the segment identifier preserves the fact that consecutive rows belong to the same instructed activity period. Rows outside an active annotation can be kept in the raw log for completeness but excluded from the classifier dataset.
+
+\begin{figure*}[!t]
+    \centering
+    \begin{minipage}[t]{0.31\textwidth}
+        \centering
+        \vspace{0pt}
+        \includegraphics[width=\linewidth,height=0.28\textheight,keepaspectratio]{c4_mobile_discovery.jpg}\\
+        \small (a) Device discovery and BLE connection
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.31\textwidth}
+        \centering
+        \vspace{0pt}
+        \includegraphics[width=\linewidth,height=0.28\textheight,keepaspectratio]{c4_mobile_label_controls.jpg}\\
+        \small (b) Per-device activity label controls
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.31\textwidth}
+        \centering
+        \vspace{0pt}
+        \includegraphics[width=\linewidth,height=0.28\textheight,keepaspectratio]{c4_mobile_live_telemetry_clean.jpg}\\
+        \small (c) Two-device live IMU telemetry
+    \end{minipage}
+    \caption{Android field receiver during data collection: (a) device discovery and connection, (b) per-device activity labelling, and (c) live IMU telemetry for two connected wearable sensors.}
+    \label{fig:android_app_screenshot}
+\end{figure*}
+
+The Android CSV stores one row per packet, with device identity, phone receive timestamp, six converted IMU channels, GPS metadata, and annotation fields (Table~\ref{tab:android_csv_format}). Rows without an active annotation leave the annotation columns blank.
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \caption{CSV fields recorded by the Android application.}
+    \label{tab:android_csv_format}
+    \begin{tabularx}{\linewidth}{lX}
+        \toprule
+        Field group & Columns \\
+        \midrule
+        Device + time & \texttt{device\_label}, \texttt{timestamp}, \texttt{epoch\_ms} \\
+        IMU values    & \texttt{accel\_\{x,y,z\}}, \texttt{gyro\_\{x,y,z\}} \\
+        GPS time      & \texttt{gps\_fix\_timestamp}, \texttt{gps\_fix\_epoch\_ms} \\
+        GPS position  & \texttt{gps\_lat}, \texttt{gps\_lon} \\
+        GPS quality   & \texttt{gps\_accuracy\_m}, \texttt{gps\_provider}, \texttt{gps\_age\_ms} \\
+        GPS motion    & \texttt{gps\_altitude\_m}, \texttt{gps\_speed\_mps}, \texttt{gps\_bearing\_deg} \\
+        Annotation    & \texttt{annotation\_label}, \texttt{annotation\_segment\_id}, \texttt{annotation\_started\_timestamp}, \texttt{annotation\_started\_epoch\_ms} \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\section{PC Receiver and Visualisation}\label{sec:pc_receiver}
+
+The PC receiver is implemented in Python using \texttt{bleak} for BLE and PyQt for the interface. It uses the same notification characteristic as the Android application but serves a different role: bench testing, debugging, and live signal inspection. The interface shows the latest acceleration, gravity-removed motion acceleration, angular velocity, and quaternion estimate, with real-time plots for raw acceleration, angular velocity, and motion acceleration. To avoid blocking the GUI, incoming packets are pushed onto a queue and written to CSV by a dedicated thread. The receiver can also export the buffered data to an Excel file.
+
+The PC tool was mainly used to inspect whether the prototype responded correctly before and after field sessions. Live plots made sensor saturation, disconnected devices, and unexpected axis behaviour visible immediately. The additional derived channels in the PC log were not required for the Android field dataset, but they were useful during development because they made movement peaks easier to inspect.
+
+\begin{figure*}[!t]
+    \centering
+    \includegraphics[width=0.92\textwidth]{c4_pc_receiver_gui.png}
+    \caption{PC-based BLE receiver for researcher-side monitoring. The interface includes connection control, real-time IMU values, recording controls, status log, quaternion visualisation, and live plots for acceleration, angular velocity, and motion acceleration.}
+    \label{fig:pc_receiver_gui}
+\end{figure*}
+
+The PC receiver writes its own CSV file with raw and derived signals (Table~\ref{tab:pc_csv_format}). Compared with the Android log it omits annotation and GPS fields but adds gravity-removed motion acceleration and quaternion estimates that were useful for live signal inspection during bench tests.
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \caption{CSV fields recorded by the PC receiver.}
+    \label{tab:pc_csv_format}
+    \begin{tabularx}{\linewidth}{lX}
+        \toprule
+        Field group & Columns \\
+        \midrule
+        Time              & \texttt{timestamp} \\
+        Raw acceleration  & \texttt{accel\_\{x,y,z\}} \\
+        Motion accel.     & \texttt{accel\_motion\_\{x,y,z\}} \\
+        Angular velocity  & \texttt{gyro\_\{x,y,z\}} \\
+        Quaternion        & \texttt{quat\_\{w,x,y,z\}} \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\section{Windowing and Feature Extraction}\label{sec:segmentation_features}
+
+For the offline classifier, labelled seated segments are loaded from the Android CSV exports and converted into window-level feature vectors. The selection of clean field segments and the participant split are part of the evaluation method described in Chapter~\ref{ch:evaluation}. During loading, non-numeric samples are dropped, rows are sorted by epoch timestamp, and exact duplicate rows are removed.
+
+Within each clean segment, raw IMU data are divided into sliding windows of 2~s with a 1~s step, retaining only windows with at least 50 samples. Each retained window inherits the label of its source segment. The IMU is configured at 208~Hz, but \(I^2C\) overhead and RTOS scheduling latency in the polling firmware reduce the effective read rate in clean field segments; this is handled by requiring a minimum sample count rather than assuming a fixed number of samples in every window.
+
+The three derived signals were acceleration magnitude \(\|\mathbf{a}\|\), gravity-removed acceleration magnitude \(|\|\mathbf{a}\|-9.80665|\), and gyroscope magnitude \(\|\boldsymbol{\omega}\|\). For each of the six raw channels and these three derived magnitude signals, ten time-domain statistics were computed: mean, standard deviation, minimum, maximum, range, root-mean-square, median, interquartile range, mean absolute first difference, and standard deviation of the first difference. This yields a 90-dimensional feature vector per window.
+
+\section{Compact KNN for Embedded Deployment}\label{sec:compact_knn}
+
+A full KNN implementation is memory-heavy because it stores the training examples as its reference set. The deployed firmware therefore uses two reductions: a 12-feature subset (Table~\ref{tab:ch6_compact_knn_features}) and KMeans prototype compression. The feature subset is dominated by gyroscope and acceleration-range information, which matches the expected signal difference between static sitting and deliberate pelvic movement. The training and held-out evaluation procedure used to fix the final model configuration is described in Chapter~\ref{ch:evaluation}.
+
+Before compression and inference, each selected feature is standardised using mean and standard-deviation values exported from the training pipeline. Within each labelled class on the standardised training windows, KMeans (\texttt{random\_state=42}, \texttt{n\_init=10}) extracts 64 centres, yielding 128 stored prototypes in total. Inference compares the current window against these prototypes using a distance-weighted KNN with \(k=7\). The exported firmware header contains the selected feature order, scaling values, prototype coordinates, class labels, and KNN setting.
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \caption{Feature subset used by the compact prototype-based KNN. Names match the order used in the generated firmware header.}
+    \label{tab:ch6_compact_knn_features}
+    \begin{tabularx}{\linewidth}{lX}
+        \toprule
+        Signal group & Selected feature names \\
+        \midrule
+        Gyroscope $x$        & \texttt{gyro\_x\_rms}, \texttt{gyro\_x\_std}, \texttt{gyro\_x\_range} \\
+        Gyroscope magnitude  & \texttt{gyro\_mag\_std}, \texttt{gyro\_mag\_max}, \texttt{gyro\_mag\_rms}, \texttt{gyro\_mag\_range}, \texttt{gyro\_mag\_mean} \\
+        Acceleration $z$     & \texttt{accel\_z\_max}, \texttt{accel\_z\_range}, \texttt{accel\_z\_std} \\
+        Accel.\ motion mag.  & \texttt{acc\_motion\_mag\_std} \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+The compact KNN model was integrated into the firmware. The device samples the IMU at a 5~ms polling interval, accumulates non-overlapping 2~s windows, computes the 12 window-level features online, and classifies each window as static sitting or pelvic rotation. This embedded cycle uses the same 2~s window duration and feature definitions as the offline analysis, but not the 1~s overlapping offline step. When pelvic rotation is detected, the inactivity timer is reset; otherwise, after 10~min without a detected pelvic-rotation window, the DRV2605L drives the vibration motor for one second. Per-window inference latency was measured on the device using the hardware cycle counter (\texttt{k\_cycle\_get\_64}). During deployment, the default Zephyr main thread stack size was too small once the \(I^2C\) driver, logging, and window processing were used together. Setting the main thread stack size to 4{,}096 bytes resolved a silent stack-overflow fault at startup.

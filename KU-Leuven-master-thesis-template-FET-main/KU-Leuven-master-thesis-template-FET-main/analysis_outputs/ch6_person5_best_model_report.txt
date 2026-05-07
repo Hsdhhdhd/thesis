@@ -1,0 +1,11 @@
+Best model: KNN k=7
+
+                 precision    recall  f1-score   support
+
+ static_sitting       1.00      1.00      1.00      3497
+pelvic_rotation       0.97      0.94      0.96       165
+
+       accuracy                           1.00      3662
+      macro avg       0.99      0.97      0.98      3662
+   weighted avg       1.00      1.00      1.00      3662
+

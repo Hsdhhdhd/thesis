@@ -1,0 +1,22 @@
+\begin{singlecolumnsection}
+
+\chapter{IMU Output Data Rate Configuration}\label{app:imu_odr}
+
+The XIAO nRF54L15 Sense documentation identifies the onboard six-axis IMU as the STMicroelectronics LSM6DS3TR-C~\citep{seeedstudio2025xiao_nrf54l15_sense}. In the firmware, both accelerometer and gyroscope sampling frequencies are requested through the Zephyr sensor API at 208~Hz. The LSM6DS3TR-C datasheet lists 208~Hz as a supported output data rate for both the accelerometer and gyroscope~\citep{stmicroelectronics2017lsm6ds3trc}. The measured effective read rate in the clean logged segments is lower than this configured output data rate because the firmware polls the sensor and also performs \(I^2C\), BLE, and operating-system tasks.
+
+\chapter{Coin Vibration Motor Specification}\label{app:haptic_motor_spec}
+
+The vibration motor used in the prototype is an 8~mm by 3~mm coin-type mini vibration motor with a rated voltage of 3--5~V and a rated current of 67~mA according to the supplier listing~\citep{sourcingmap_coin_vibration_motor}. Because no formal datasheet was found for that exact retail item, a comparable 8~mm coin vibration motor datasheet from Precision Microdrives was also consulted for reference specifications~\citep{precisionmicrodrives308100}. Its specification image is reproduced from the supplier listing.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{c3_haptic_motor.png}
+    \caption{Supplier specification image of the coin vibration motor.}
+    \label{fig:haptic_motor_spec}
+\end{figure}
+
+\chapter{Ethical Approval}\label{app:ethics}
+
+The pilot field study was reviewed and approved under the project ``Daily Monitoring of Pelvic Rotation Using Wearable IMUs'' by the KU Leuven Privacy and Ethics platform (PRET), approval number \texttt{G-2025-10284-R2(MIN)}, dated 5 January 2026. The application was assessed for compliance with the General Data Protection Regulation (GDPR) by the data protection officer and reviewed for ethical standards by the Social and Societal Ethics Committee (SMEC); both gave a favourable decision. All participants gave informed consent before data collection and were free to stop or withdraw at any time.
+
+\end{singlecolumnsection}

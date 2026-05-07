@@ -1,0 +1,112 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                      %
+% LaTeX, FIIW thesis template (EA-ICT, two-column report layout)      %
+%                                                                      %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[11pt,a4paper,twocolumn]{report}
+\raggedbottom
+
+\usepackage[groept]{fiiw}
+
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{supertabular}
+\usepackage{listings}
+\usepackage{verbatim}
+\usepackage{hyperref}
+\hypersetup{hidelinks}
+\usepackage{url}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage[final]{pdfpages}
+\usepackage{float}
+\usepackage{cuted}
+\usepackage{capt-of}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{siunitx}
+\sisetup{detect-all}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta}
+
+\graphicspath{{./images/}}
+
+% Float placement: let figures take more of a page, leave less white space
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\bottomfraction}{0.7}
+\renewcommand{\textfraction}{0.07}
+\renewcommand{\floatpagefraction}{0.75}
+\renewcommand{\dbltopfraction}{0.9}
+\renewcommand{\dblfloatpagefraction}{0.75}
+\setcounter{topnumber}{3}
+\setcounter{bottomnumber}{3}
+\setcounter{totalnumber}{5}
+\setcounter{dbltopnumber}{3}
+
+\lstset{
+    basicstyle=\scriptsize\ttfamily,
+    numbers=left,
+    numberstyle=\tiny,
+    tabsize=2,
+    showspaces=false,
+    frame=single,
+    breaklines=true,
+    extendedchars=true
+}
+
+\acknowledgementsfile{chapters/acknowledgements}
+\abstractENfile{chapters/abstract}
+\listofsymbolsfile{chapters/symbols}
+
+\documentlanguage{english}
+
+\program{Electronics and ICT }
+\programdutch{elektronica-ICT }
+\title{AI-Enabled Wearable Device for Pelvic Motion Monitoring and Haptic Intervention During Prolonged Sitting}
+\subtitle{}
+\firstnameA{Ruyang}
+\lastnameA{Luo}
+\firstnameB{Yonggui}
+\lastnameB{Yuan}
+\academicyear{2025--2026}
+
+\supervisor{Prof.\ Bart Vanrumste}
+\supervisorCompany{Department of Electrical Engineering, KU Leuven, Andreas Vesaliusstraat 13, 3000 Leuven, Belgium}
+\supervisorEmail{bart.vanrumste@kuleuven.be}
+\cosupervisorA{Prof.\ Jean-Marie Aerts}
+\cosupervisorACompany{Department of Biosystems, KU Leuven, Kasteelpark Arenberg 30, 3001 Leuven, Belgium}
+\cosupervisorAEmail{jean-marie.aerts@kuleuven.be}
+\cosupervisorB{Meixing Liao}
+\cosupervisorBCompany{Department of Electrical Engineering, KU Leuven, Andreas Vesaliusstraat 13, 3000 Leuven, Belgium}
+\cosupervisorBEmail{meixing.liao@kuleuven.be}
+
+\begin{document}
+
+\preface
+\input{chapters/01-introduction}
+\input{chapters/02-design}
+\input{chapters/03-implementation}
+\clearpage
+\input{chapters/04-evaluation}
+\clearpage
+\input{chapters/05-results}
+\clearpage
+\input{chapters/05-discussion}
+\clearpage
+\input{chapters/06-conclusion}
+
+\bibliographystyle{ieeetr}
+\bibliography{bibliography}
+
+\appendix
+\appendixpage
+\input{chapters/appendix1}
+
+\backcover
+\end{document}

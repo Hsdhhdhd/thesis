@@ -1,0 +1,75 @@
+\chapter{Introduction}\label{ch:introduction}
+
+\section{Background and Motivation}\label{sec:intro_background}
+
+Sedentary behaviour is defined as any waking behaviour with an energy expenditure of \(\le 1.5\) metabolic equivalents (METs) while sitting, reclining, or lying~\citep{sbrn2017terminology,sbrn2012standardized}. Sitting is therefore one of the most common forms of sedentary behaviour, with standard energy-cost references placing it around 1.0--1.5 METs~\citep{ainsworth2000compendium}. This category is widespread in contemporary work and transport contexts. Office-based workers can accumulate substantial sitting time during the working day~\citep{hadgraft2015excessive}, and population-level changes in work-related physical activity have shifted many daily routines toward lower physical demand~\citep{juneau2010trends}. Sedentary behaviour is therefore not only a lifestyle description; it is a common exposure pattern that can occupy many hours of a normal day.
+
+The health relevance of sedentary behaviour has been studied in relation to cardiometabolic risk factors, cardiovascular disease, type 2 diabetes, obesity, and all-cause mortality~\citep{reichel2022occupational,owen2020sedentary,henschel2020sitting,katzmarzyk2019sedentary}. Within this broad category, \emph{prolonged sitting} is important because the temporal pattern of sitting also matters. Evidence on sedentary breaks indicates that interrupting accumulated sitting time can be relevant beyond measuring the total amount of sedentary time alone~\citep{healy2008breaks,kim2015extracting}. A monitoring approach that only estimates total sedentary duration can therefore miss an important behavioural distinction: a person may remain sedentary while still changing posture, shifting weight, or moving the pelvis.
+
+For this reason, prolonged sitting can be considered not only as a duration problem but also as a movement-pattern problem. The specific operational target in this thesis is \emph{prolonged static sitting}: seated periods in which lower-trunk and pelvic movement remain limited. This is narrower than sedentary behaviour as a whole. It does not require estimating energy expenditure, classifying every sedentary activity, or diagnosing posture. It requires detecting whether movement has occurred around the pelvis during a recent sitting interval.
+
+The pelvis is relevant because seated posture and lumbosacral loading are linked to the position and movement of the lower trunk. Sitting posture can affect mechanical loading around the spine and lumbosacral region~\citep{kwon2018sitting}, and sitting behaviour has been examined in relation to low-back-pain complaints among sedentary office workers~\citep{bontrup2019low}. These findings do not imply that a small wearable can diagnose back pain or estimate spinal load. They do, however, motivate technical research on whether pelvic-region movement during sitting can be monitored directly enough to support timely prompts. Monitoring sitting patterns in this local segment complements accumulated sedentary-time measurement by asking whether the seated body has remained static.
+
+\section{Related Work}\label{sec:intro_related_work}
+
+\subsection{Sitting Monitoring Approaches}
+
+Existing sitting-monitoring systems can be grouped into vision-based methods, instrumented furniture, and body-worn sensing. Vision-based methods estimate human pose from RGB, depth, or RGB-D data~\citep{lan2023vision,shotton2011realtime,zimmermann2018rgbd,hansen2019fusing}; in seated contexts, machine-vision systems have been used to classify proper and improper sitting posture~\citep{estrada2023machine}. Their advantage is rich spatial information, but they are tied to the camera location, depend on line of sight, and introduce privacy concerns.
+
+Instrumented chairs and smart cushions detect seated state or seated posture through pressure, contact, or force patterns~\citep{tan2001sensing,ma2017activity,kappattanavar2021monitoring}. These systems avoid camera privacy issues and can be effective when the user remains at one seat. Their limitation is mobility. They monitor a chair or cushion rather than the person, which is less suitable for public transport, home, office, and shared spaces where the seating environment changes.
+
+Body-worn sensing follows the user across environments and can monitor the body segment of interest rather than the furniture. For a pelvis-focused task, this mobility is valuable because the same sensor can remain attached while the wearer moves between seats. The trade-off is that the wearable provides a lower-dimensional signal than cameras or pressure arrays. A body-worn IMU is therefore better suited to detecting movement occurrence or movement trends than reconstructing full seated posture.
+
+\subsection{Wearable IMU Sensing and Pelvic Placement}
+
+Inertial measurement units combine accelerometers and gyroscopes, and some wearable systems also include magnetic-field sensing for orientation estimation. IMUs are compact and usable outside a prepared laboratory, which makes them suitable for wearable movement recognition and spine-related movement assessment~\citep{papi2017wearable}. The present prototype uses six-axis acceleration and angular-velocity sensing rather than magnetometer-based heading estimation, because the target is movement detection within short windows rather than absolute orientation reconstruction.
+
+Sensor placement is an important experimental factor. Wrist or phone sensors are practical for many daily activity tasks, but they can respond to arm movement, typing, or phone handling while the pelvis remains still. For seated pelvic movement, a sacral or lower-back placement is closer to the segment being monitored. Liao et al. report pelvis-region IMU placement for pelvic-rotation detection~\citep{liao2026imu_pelvic_rotation}, which supports treating the sacrum/lower back as the most relevant location for the present sensing problem.
+
+\subsection{Wearable Hardware for Field Monitoring}
+
+The hardware route for a field-worn sitting monitor differs from a pure offline sensing study. A research-grade logger such as Shimmer is useful as a reference because it provides calibrated inertial recordings, but it is not designed as a low-cost, locally acting reminder device. In contrast, microcontroller-based wearable nodes can combine sensing, wireless logging, embedded processing, and feedback within one unit. The XIAO nRF54L15 Sense integrates a microcontroller, BLE radio, and LSM6DS3TR-C IMU in a compact board~\citep{seeedstudio2025xiao_nrf54l15_sense}; the LSM6DS3TR-C supports the output data rates used for the accelerometer and gyroscope configuration~\citep{stmicroelectronics2017lsm6ds3trc}.
+
+Low cost is not a scientific result by itself, but it matters for repeated field prototyping. Multiple wearable nodes may be needed for participant sessions, failures are more likely during early development, and a future reminder system would need to be affordable enough for practical use. Hardware simplicity also reduces the number of external modules and cables that can disturb body attachment. These considerations motivate a compact embedded platform rather than a laboratory-only logger.
+
+\subsection{Feedback and Sitting Interruption}
+
+Sitting interventions often aim to interrupt long sedentary bouts through standing breaks, workplace prompts, or environmental changes. Take-a-Stand and Move More @ Work are examples of interventions designed to reduce workplace sitting time~\citep{pronk2012take,hargreaves2023move}, and active workstations have also been evaluated in relation to productivity and performance~\citep{ojo2018active}. These studies address behavioural change at the level of prompts, work routines, or workstation design.
+
+Wearable biofeedback studies show that body-worn sensing can support movement feedback~\citep{battis2024wearable}. For prolonged static sitting, feedback is a separate design question from sensing. A system may be able to record pelvic movement offline without being able to prompt the wearer at the moment when a prolonged static interval occurs. A local haptic cue provides one possible prompt channel that does not depend on looking at a phone screen, but its behavioural effect still requires a user study.
+
+\subsection{Embedded Machine Learning for On-Device Detection}
+
+Sensor-based movement recognition has increasingly used machine-learning methods, including deep learning in broader human activity recognition studies~\citep{bock2021tutorial,trabelsi2022sensor,iqbal2020wearable}. The sitting-monitoring task in this thesis is narrower: classify short windows of pelvis-region IMU data as static sitting or pelvic rotation. Classical classifiers remain relevant for this type of embedded wearable task because they can use lightweight time-domain features and have transparent computational requirements~\citep{deboeverie2016human,bonaccorso2017machine,khan2013exploratory}.
+
+On-device inference is constrained by memory, computation time, and energy. Edge machine learning and TinyML move the decision onto the device itself~\citep{diab2022embedded,abadade2023tinyml,lin2023embedded}, but microcontroller deployments still need compact features and models~\citep{branco2019machine,heydari2025tinyml,immonen2022tinyml}. K-nearest neighbours (KNN) is simple and interpretable, but a full KNN stores all training examples~\citep{bonaccorso2017machine}. Condensed nearest-neighbour methods and prototype-based reductions address this storage issue by replacing the full reference set with representative examples~\citep{hart1968condensed,zubair2024kmeans}.
+
+\subsection{Research Gap}
+
+The related work leaves three connected gaps. First, many sitting-monitoring systems focus on total sitting time, full posture categories, or chair-bound sensing, while the target here is the occurrence of pelvic-region movement during a sitting interval. Second, many wearable IMU studies remain offline analysis pipelines; a reminder-oriented system also needs a local decision and cue-delivery route. Third, field use requires evidence across the chain: sensor trend agreement, labelled mobile data collection, person-independent detection performance, and embedded timing.
+
+The gap is therefore an academic research problem rather than a claim that a finished product is missing from the market. The question is whether a compact pelvis-region wearable can connect sensing, labelled field collection, on-device classification, and haptic cue delivery while staying within the evidence boundary of a preliminary technical study.
+
+\section{Problem Statement}\label{sec:intro_problem}
+
+The specific problem addressed in this thesis is how to build and preliminarily evaluate a small pelvis-focused wearable system for detecting prolonged static sitting and triggering a local haptic cue. The problem has three linked technical parts. The sensing location should be close to the movement of interest; otherwise, unrelated arm or phone movement may dominate the signal. The decision should be available during the sitting bout; otherwise, the system remains a post-hoc logger rather than a reminder platform. The classifier should be compact enough for the target microcontroller; otherwise, local haptic feedback still depends on a phone, laptop, or cloud service.
+
+Two technical labels are used throughout the thesis. \emph{Static sitting} denotes labelled seated periods without intentional pelvic movement. \emph{Pelvic rotation} denotes instructed anterior-posterior seated pelvic movement detected by a pelvis-mounted IMU. These are detection classes, not clinical posture categories. The thesis therefore evaluates whether the wearable can detect the instructed movement class in pilot data; it does not claim to measure anatomical pelvic angle, diagnose posture, or prove health benefit.
+
+\section{Research Aim and Questions}\label{sec:intro_aim}
+
+The aim of this thesis is to design, implement, and preliminarily evaluate an IMU-based wearable haptic feedback system for monitoring seated pelvic movement during prolonged sitting. The thesis is guided by three research questions:
+
+\begin{enumerate}
+    \item Can a low-cost embedded IMU worn near the pelvis capture motion patterns sufficiently consistent with a research-grade Shimmer IMU for this detection task?
+    \item Can the proposed wearable system support real-time data collection and annotation in realistic field and transport contexts?
+    \item Can the collected IMU data distinguish static sitting from pelvic rotation, and can a compact classifier be deployed on-device efficiently enough to support local haptic feedback?
+\end{enumerate}
+
+\section{Contributions}\label{sec:intro_contributions}
+
+The main contributions are: (1) a compact sacrum-region wearable research prototype based on the Seeed Studio XIAO nRF54L15 Sense, a DRV2605L driver, and a coin vibration motor; (2) an Android and PC data-acquisition platform with BLE collection, real-time inspection, GPS-supported field recording, and per-device labelling; (3) a Shimmer-based sensor comparison protocol including co-located and pilot field-worn recordings; (4) a labelled pilot field dataset containing walking, public transport, and seated train-journey segments for five participants; and (5) an end-to-end embedded machine-learning pipeline including windowed feature extraction, a five-classifier comparison, KMeans prototype compression, firmware deployment, and on-device inference timing measurement.
+
+\section{Thesis Outline}\label{sec:intro_outline}
+
+Chapter~\ref{ch:design} describes the wearable hardware, haptic module, and sensor placement. Chapter~\ref{ch:implementation} presents the BLE interface, Android and PC data-collection tools, and embedded classifier implementation. Chapter~\ref{ch:evaluation} describes the evaluation methods for the Shimmer comparison and pilot detection study. Chapter~\ref{ch:results} reports the corresponding sensor-agreement, classifier, and on-device timing results. Chapter~\ref{ch:discussion} discusses the findings and limitations, and Chapter~\ref{ch:conclusion} concludes the thesis.

@@ -1,0 +1,4 @@
+bleak>=0.20.0
+PyQt5>=5.15.0
+PyQtChart>=5.15.0
+openpyxl>=3.0.0

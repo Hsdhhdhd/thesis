@@ -1,0 +1,130 @@
+\chapter{Wearable System Design}\label{ch:design}
+
+\section{System Overview}\label{sec:design_overview}
+
+The prototype is a body-worn research unit that monitors seated pelvic-rotation movement during prolonged sitting and provides haptic feedback when no pelvic rotation has been detected for a configured period. The design follows the research gap in Chapter~\ref{ch:introduction}: the study requires sensing near the relevant body segment, labelled field recording, local decision-making, and immediate cue delivery. A pelvis-region placement is used because the target movement occurs in the lower trunk rather than at the wrist. Labelled logging is needed because the classifier is trained from field recordings collected in realistic sitting contexts. Local inference is used because haptic feedback should not depend on a laptop or cloud connection. Compact and low-cost hardware also supports repeated field prototyping with multiple wearable units.
+
+The functional architecture is shown in Figure~\ref{fig:system_architecture}. The IMU on the XIAO nRF54L15 Sense measures three-axis acceleration and angular velocity near the pelvis. The microcontroller processes the values and tracks whether pelvic rotation has occurred. If no pelvic rotation is detected for the configured 10~min firmware interval, the microcontroller drives a DRV2605L haptic driver to actuate a coin vibration motor for one second. The same data can be transmitted over Bluetooth Low Energy (BLE) to a smartphone or PC for logging, annotation, and offline analysis.
+
+\begin{figure*}[!tbp]
+    \centering
+    \begin{tikzpicture}[
+        node distance=10mm,
+        every node/.style={font=\small},
+        block/.style={draw, rounded corners, align=center,
+                      minimum height=10mm, minimum width=28mm,
+                      inner xsep=4pt, inner ysep=4pt},
+        arrow/.style={-Latex, thick}
+    ]
+        \node[block] (imu)   {IMU (LSM6DS3TR-C)\\$a_{x,y,z}$, $g_{x,y,z}$};
+        \node[block, right=of imu] (mcu)   {XIAO nRF54L15\\inactivity logic};
+        \node[block, right=of mcu] (drv)   {DRV2605L\\haptic driver};
+        \node[block, right=of drv] (motor) {Vibration motor\\1\,s reminder};
+        \node[block, below=12mm of mcu] (ble) {BLE notification\\(6-axis stream)};
+        \node[block, below=of ble, xshift=-25mm] (phone) {Android app\\logging + labelling};
+        \node[block, below=of ble, xshift=25mm]  (pc)    {PC receiver\\monitor + export};
+
+        \draw[arrow] (imu)--(mcu);
+        \draw[arrow] (mcu)--(drv);
+        \draw[arrow] (drv)--(motor);
+        \draw[arrow] (mcu)--(ble);
+        \draw[arrow] (ble)--(phone);
+        \draw[arrow] (ble)--(pc);
+    \end{tikzpicture}
+    \caption{Functional architecture of the wearable pelvic-rotation monitoring and haptic feedback system. The on-device feedback loop runs from the pelvis-mounted IMU $\to$ microcontroller $\to$ haptic driver $\to$ motor; the same data are also streamed over BLE to a phone or PC for logging and offline analysis.}
+    \label{fig:system_architecture}
+\end{figure*}
+
+Figure~\ref{fig:device_external} shows the assembled prototype.
+
+The architecture separates the research workflow from the final feedback loop. During data collection, the BLE stream is used by the Android and PC tools to inspect signals and store labelled files. During deployment, the compact classifier and inactivity timer run on the wearable itself. This separation allows the same hardware to support both experimental recording and stand-alone feedback.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\linewidth]{c3_device_external.png}
+    \caption{External view of the wearable prototype. The black carrier plate sits on the orange enclosure that houses the battery.}
+    \label{fig:device_external}
+\end{figure}
+
+\section{Mechanical Prototype}\label{sec:mechanical_prototype}
+
+The prototype was assembled with a 3D-printed perforated carrier plate and an orange enclosure. The XIAO nRF54L15 Sense and the DRV2605L were mounted on the black carrier plate and fixed mechanically with hot-melt glue. A 500~mAh battery is housed inside the enclosure, which measures \(5.4 \times 3.0 \times 1.5~\mathrm{cm}\). The prototype component cost was below EUR 30, excluding the phone, PC, and Shimmer reference (XIAO board $\approx$EUR 15, DRV2605L module and motor below EUR 10, battery and printed enclosure together $\approx$EUR 5).
+
+The enclosure was designed as a functional research prototype rather than a final consumer device. The printed body protects the battery and gives a flat contact surface for attachment, while the perforated carrier plate leaves the electronics visible and accessible for debugging. This choice made it easier to adjust wiring and firmware during development, but it also limited mechanical robustness. In particular, the battery contact method was later identified as a source of intermittent recording gaps during field use.
+
+Table~\ref{tab:prototype_components} lists the main hardware components and their function in the prototype. The table separates the sensing and processing board from the feedback elements and the mechanical housing, because each part supports a different step in the sensing-to-cue pipeline.
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \caption{Main hardware components.}
+    \label{tab:prototype_components}
+    \begin{tabularx}{\linewidth}{lX}
+        \toprule
+        Component & Role \\
+        \midrule
+        XIAO nRF54L15 Sense & Microcontroller + embedded IMU + BLE radio \\
+        LSM6DS3TR-C IMU & Three-axis acceleration and angular velocity \\
+        DRV2605L & Haptic driver for the vibration motor \\
+        Coin vibration motor & Tactile reminder to the wearer \\
+        500~mAh battery & Internal power source \\
+        3D-printed enclosure & Mechanical housing \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+The internal arrangement of the enclosure is shown in Figure~\ref{fig:device_internal}. The open layout made debugging easier during development, while the orange enclosure provided the contact surface used for body attachment.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\linewidth]{c3_device_internal.png}
+    \caption{Internal view of the prototype showing the enclosure and the 500~mAh battery.}
+    \label{fig:device_internal}
+\end{figure}
+
+\section{Electrical Integration}\label{sec:electrical_integration}
+
+The XIAO and the DRV2605L are connected through power and an \(I^2C\) bus. The XIAO ground (GND) and 3V3 supply pins are connected to the DRV2605L GND and VIN pins. XIAO pin D4 serves as the serial data line (SDA), and XIAO pin D5 serves as the serial clock line (SCL). The vibration motor is connected to the positive and negative motor output terminals of the DRV2605L. The connections are summarised in Table~\ref{tab:electrical_connections}. The wiring was intentionally kept minimal: the IMU is already integrated on the XIAO board, and the external circuit only adds the haptic driver, motor, and battery.
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \caption{Electrical connections.}
+    \label{tab:electrical_connections}
+    \begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}lll@{}}
+        \toprule
+        XIAO pin & DRV2605L pin & Function \\
+        \midrule
+        GND & GND & Common ground \\
+        3V3 & VIN & Driver power supply \\
+        D4 & SDA & \(I^2C\) data \\
+        D5 & SCL & \(I^2C\) clock \\
+        No direct XIAO pin & OUT+ / OUT- & Motor output \\
+        \bottomrule
+    \end{tabular*}
+\end{table}
+
+\section{Sensor Node and Configuration}\label{sec:embedded_sensor_node}
+
+The Seeed Studio XIAO nRF54L15 Sense was selected because it integrates the microcontroller, the LSM6DS3TR-C IMU, and the BLE radio on a single compact board~\citep{seeedstudio2025xiao_nrf54l15_sense}. This reduces wiring, board area, and component count compared with a separate microcontroller and sensor module. The board version used in the evaluated prototype was the XIAO nRF54L15 Sense development board available during the 2025--2026 thesis work. The accelerometer and gyroscope are configured at 208~Hz, which gives sufficient temporal resolution for short pelvic-rotation movements while remaining practical for wireless logging~\citep{stmicroelectronics2017lsm6ds3trc}. The recorded sensor stream contains six raw channels: \(a_x, a_y, a_z\) (acceleration) and \(g_x, g_y, g_z\) (angular velocity).
+
+The IMU configuration is deliberately simple. The thesis uses raw acceleration and angular velocity channels, then derives magnitude-based features during offline processing and embedded inference. This avoids relying on absolute orientation estimates, which would require additional calibration and would be more sensitive to exact placement. For the intended binary decision, the presence of movement in a recent window is more important than the reconstruction of a precise pelvic angle.
+
+\section{Haptic Feedback Module}\label{sec:haptic_feedback_module}
+
+The motor used in the prototype is an 8~mm by 3~mm coin vibration motor with a rated voltage of 3--5~V and a rated current of 67~mA according to the supplier listing~\citep{sourcingmap_coin_vibration_motor}. A formal datasheet was not available for that exact retail item; a comparable 8~mm coin vibration motor datasheet reports an 8~mm diameter, 3.4~mm body length, 3~V rated operating voltage, and 66~mA typical rated current~\citep{precisionmicrodrives308100}. The motor is compact enough to fit inside the enclosure and provides a local tactile output at the lower back. The DRV2605L is used so that the microcontroller does not drive the motor directly and so that future versions can support more controlled haptic patterns. In the deployed firmware, the inactivity threshold is set to 10~min and the motor is driven for one second whenever that condition is met. The current version uses a fixed vibration intensity; later versions could vary the pattern, intensity, or interval to match user preference.
+
+The haptic output is included as a cue-delivery mechanism, not as a validated behavioural intervention. Its role in this thesis is to show that the sensing and classification result can be connected to an immediate local reminder. Whether the vibration is noticeable, acceptable, or effective over longer use is left for future work rather than assumed in the design.
+
+\section{Wearing Position}\label{sec:wearable_placement}
+
+The device is worn close to the sacrum, at the lower-back/pelvic region. This placement is more directly informative for lower-trunk and pelvic motion than wrist placements, and is consistent with the sacral/pelvic placement reported by Liao et al.~\citep{liao2026imu_pelvic_rotation} for IMU-based pelvic-rotation detection. The placement also keeps the device near the vibration target, so the same body location is used for sensing and feedback.
+
+For body attachment, the enclosure is fixed to a sterile island dressing (10~cm by 15~cm) using double-sided tape, and the dressing is applied to the skin (Figure~\ref{fig:wearing_on_body}). This two-layer approach distributes the adhesive load, gives a stable short-session contact surface, and lets the dressing be replaced between sessions without repositioning the device. It was chosen for the pilot sessions because it is simple, inexpensive, and compatible with different participants.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.52\linewidth]{c3_wearing_on_body.jpg}
+    \caption{Prototype attached to the sacral/pelvic region via the sterile island dressing during a wearing session.}
+    \label{fig:wearing_on_body}
+\end{figure}

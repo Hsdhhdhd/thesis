@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.BleImuAndroid" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/dashboard_primary</item>
+        <item name="colorOnPrimary">@color/dashboard_on_primary</item>
+        <item name="colorSecondaryContainer">@color/dashboard_accent_soft</item>
+        <item name="colorOnSecondaryContainer">@color/dashboard_text_primary</item>
+        <item name="colorSurface">@color/dashboard_card_surface</item>
+        <item name="colorSurfaceVariant">@color/dashboard_card_surface_alt</item>
+        <item name="colorOutline">@color/dashboard_card_border</item>
+        <item name="android:textColorPrimary">@color/dashboard_text_primary</item>
+        <item name="android:textColorSecondary">@color/dashboard_text_secondary</item>
+        <item name="android:statusBarColor" tools:targetApi="l">@color/dashboard_background_top</item>
+        <item name="android:navigationBarColor">@color/dashboard_background_bottom</item>
+        <item name="android:windowBackground">@drawable/bg_app_gradient</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
+    </style>
+</resources>

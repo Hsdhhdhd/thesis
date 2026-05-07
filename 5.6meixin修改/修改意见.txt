@@ -1,0 +1,12 @@
+Dear Yonggui and Ruyang,
+
+Good evening. I finally finished reading. Unfortunately, I have to be honest that in my opinion the manuscript still has a lot of problems. The major ones include:
+very messy logic in introduction
+a lot of repeated but not in-depth explanations
+the absence of the results section
+the related works are not fully related to your work
+
+The discussion section has improved a lot, but I will check again after your updates. Please find the detailed comments attached.
+
+Best regards,
+Meixing

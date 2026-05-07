@@ -1,0 +1,133 @@
+Total comments: 44
+
+--- Comment #42 | Meixing Liao | 2026-04-29T10:36:00Z ---
+加一下Jona吧
+
+--- Comment #50 | Meixing Liao | 2026-04-29T21:58:00Z ---
+这怎么就clinical concern了
+
+--- Comment #51 | Meixing Liao | 2026-04-29T21:58:00Z ---
+prolonged本来就是以时间定义的，谈不上emphasize或者critical
+
+--- Comment #52 | Meixing Liao | 2026-04-29T21:59:00Z ---
+你确定是30分钟？
+
+--- Comment #53 | Meixing Liao | 2026-04-29T22:00:00Z ---
+Such = sedentary behavior?
+
+--- Comment #54 | Meixing Liao | 2026-04-29T22:01:00Z ---
+前两段的逻辑太乱了，一会儿sedentary behavior，一会儿prolonged sitting；一会儿别的人，一会儿this thesis.
+
+--- Comment #55 | Meixing Liao | 2026-04-29T22:02:00Z ---
+Prolonged sitting是sedentary behavior的子集，你应该先写sedentary behavior，因为SB导致的各种医学问题，对SB的监测，然后再细分到prolonged sitting还有待监测
+
+--- Comment #56 | Meixing Liao | 2026-04-29T22:03:00Z ---
+什么benefit？
+
+--- Comment #57 | Meixing Liao | 2026-04-29T22:03:00Z ---
+这又是啥？
+
+--- Comment #58 | Meixing Liao | 2026-04-29T22:04:00Z ---
+这句话是对的但跟你们的研究没关系啊
+
+--- Comment #59 | Meixing Liao | 2026-04-29T22:05:00Z ---
+不是，你的problem statement为啥还有这么多background的内容。要不放进上一段要不放进related work，这一段只用一段话介绍research question和objectives
+
+--- Comment #61 | Meixing Liao | 2026-04-29T22:06:00Z ---
+我们并不需要用户自己有awareness，他们只需要对你传感器的feedback有awareness就行
+
+--- Comment #62 | Meixing Liao | 2026-04-29T22:06:00Z ---
+最好叫intervene/break sedentary behavior
+
+--- Comment #60 | Meixing Liao | 2026-04-29T22:07:00Z ---
+这一大堆都没有写你们的problem是什么
+
+--- Comment #63 | Meixing Liao | 2026-04-29T22:09:00Z ---
+这一段的逻辑也很混乱，你应该开门见山什么是research question， 然后有哪几个objective，最后总结你们的contribution
+
+--- Comment #66 | Meixing Liao | 2026-04-29T22:09:00Z ---
+但你之后并没有分part啊
+
+--- Comment #67 | Meixing Liao | 2026-04-29T22:10:00Z ---
+Prolonged posture placement?
+
+--- Comment #68 | Meixing Liao | 2026-04-29T22:43:00Z ---
+这是完全不同的领域
+
+--- Comment #69 | Meixing Liao | 2026-04-29T22:43:00Z ---
+你们这个课题属于human activity recognition
+
+--- Comment #70 | Meixing Liao | 2026-04-29T22:45:00Z ---
+这些研究是在研究prolonged posture吗？
+
+--- Comment #71 | Meixing Liao | 2026-04-29T23:15:00Z ---
+‘Due to’ is used in negative context
+
+--- Comment #72 | Meixing Liao | 2026-04-29T23:16:00Z ---
+这跟算法有什么关系？你这一段不都是在写传感器？
+
+--- Comment #74 | Meixing Liao | 2026-04-29T23:15:00Z ---
+Sitting is a posture not a behavior
+
+--- Comment #73 | Meixing Liao | 2026-04-29T23:19:00Z ---
+这一部分我先不看了，前两章都还需要大改
+
+--- Comment #77 | Meixing Liao | 2026-04-29T23:24:00Z ---
+这一段可以写的更精炼。We propose a wearable system to monitor prolonged sitting and provide real-time haptic feedback. The architecture is demonstrated in Fig 3.1. The system consists of xxx
+
+--- Comment #78 | Meixing Liao | 2026-04-29T23:21:00Z ---
+这两种sensor并不是对立的啊，lab_only也可以是body-worn
+
+--- Comment #79 | Meixing Liao | 2026-04-29T23:22:00Z ---
+什么叫pelvic-region motion?
+
+--- Comment #87 | Meixing Liao | 2026-04-29T23:26:00Z ---
+什么communication
+
+--- Comment #88 | Meixing Liao | 2026-04-29T23:26:00Z ---
+这个震动模块的大小和参数也介绍一下
+
+--- Comment #89 | Meixing Liao | 2026-04-29T23:28:00Z ---
+第一次使用缩写的时候要介绍全称
+
+--- Comment #116 | Meixing Liao | 2026-04-29T23:28:00Z ---
+这也太口水话了
+
+--- Comment #117 | Meixing Liao | 2026-04-29T23:29:00Z ---
+这是primary？
+
+--- Comment #118 | Meixing Liao | 2026-04-29T23:29:00Z ---
+不要用破折号
+
+--- Comment #119 | Meixing Liao | 2026-04-29T23:30:00Z ---
+给具体的价格
+
+--- Comment #120 | Meixing Liao | 2026-04-29T10:39:00Z ---
+你要解释这些abbreviations
+
+--- Comment #121 | Meixing Liao | 2026-04-29T10:38:00Z ---
+你确定这是我们这个实验的sensor placement?
+
+--- Comment #122 | Meixing Liao | 2026-04-29T23:33:00Z ---
+上次不是拍了放在我身上的图？
+
+--- Comment #123 | Meixing Liao | 2026-04-29T23:39:00Z ---
+这一部分在related work里面被忽略了
+
+--- Comment #124 | Meixing Liao | 2026-04-29T23:34:00Z ---
+这句话就不用了吧
+
+--- Comment #128 | Meixing Liao | 2026-04-29T23:40:00Z ---
+这怎么又是dual-platform?这不就是前端后端？
+
+--- Comment #129 | Meixing Liao | 2026-04-30T00:05:00Z ---
+这有必要写吗
+
+--- Comment #130 | Meixing Liao | 2026-04-30T00:06:00Z ---
+可以直接给一个csv的样本
+
+--- Comment #131 | Meixing Liao | 2026-04-30T00:07:00Z ---
+这是啥
+
+--- Comment #142 | Meixing Liao | 2026-04-30T00:28:00Z ---
+Discussion呢？

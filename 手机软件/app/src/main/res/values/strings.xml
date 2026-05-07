@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">IMU Receiver</string>
+    <string name="status_ready">Ready</string>
+    <string name="recording_not_started">Recording: not started</string>
+    <string name="hero_label">FIELD RECEIVER</string>
+    <string name="hero_subtitle">Scan sensors, monitor motion streams, and capture labeled sessions with GPS from one screen.</string>
+    <string name="device_list">Discovered devices</string>
+    <string name="discovery_subtitle">Choose a nearby IMU sensor before you connect.</string>
+    <string name="scan_devices">Scan</string>
+    <string name="connect">Connect</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="connected_devices_title">Connected devices</string>
+    <string name="connected_devices_subtitle">Each connected sensor gets its own label controls and disconnect action.</string>
+    <string name="session_title">Session overview</string>
+    <string name="session_subtitle">Start recording once at least one sensor is connected, then export the last CSV when you are done.</string>
+    <string name="start_recording">Start Recording</string>
+    <string name="stop_recording">Stop Recording</string>
+    <string name="share_last_file">Share Last File</string>
+    <string name="packets_label">Packets captured</string>
+    <string name="gps_label">GPS status</string>
+    <string name="labels_section_title">Labels</string>
+    <string name="edit_labels">Edit labels</string>
+    <string name="stop_annotation">Stop Label</string>
+    <string name="edit_labels_dialog_title">Edit Labels</string>
+    <string name="edit_labels_add_hint">New label name</string>
+    <string name="edit_labels_add_button">Add</string>
+    <string name="edit_labels_save">Save</string>
+    <string name="edit_labels_cancel">Cancel</string>
+    <string name="annotation_default">Annotation: not active</string>
+    <string name="packet_count_default">Packets: 0</string>
+    <string name="last_packet_default">Last packet: --</string>
+    <string name="accel_default">Accel (m/s^2): X 0.00 | Y 0.00 | Z 0.00</string>
+    <string name="gyro_default">Gyro (deg/s): X 0.00 | Y 0.00 | Z 0.00</string>
+    <string name="gps_default">GPS: waiting to record</string>
+    <string name="live_telemetry_title">Live telemetry</string>
+    <string name="live_telemetry_subtitle">Per-device packet rate, acceleration, and gyroscope snapshots.</string>
+    <string name="log_title">Event log</string>
+    <string name="log_subtitle">Recent connection, recording, and location events.</string>
+    <string name="log_placeholder">No events yet.</string>
+</resources>

@@ -1,0 +1,53 @@
+// To get started, press Ctrl+Space to bring up the completion menu and view the available nodes.
+// You can also use the buttons in the sidebar to perform actions on nodes.
+// Actions currently available include:
+// * Enabling / disabling the node
+// * Adding the bus to a bus
+// * Removing the node
+// * Connecting ADC channels
+// For more help, browse the DeviceTree documentation at https://docs.zephyrproject.org/latest/guides/dts/index.html
+// You can also visit the nRF DeviceTree extension documentation at https://docs.nordicsemi.com/bundle/nrf-connect-vscode/page/guides/ncs_configure_app.html#devicetree-support-in-the-extension
+/* app.overlay */
+/* 必须包含这个头文件才能使用 NRF_PSEL 宏 */
+#include <zephyr/dt-bindings/pinctrl/nrf-pinctrl.h>
+&pinctrl {
+    /* 1. 定义正常工作时的引脚配置 */
+    i2c22_default: i2c22_default {
+        group1 {
+            /* * NRF_PSEL(功能, 端口号, 引脚号)
+             * SDA: Port 1, Pin 10
+             * SCL: Port 1, Pin 11
+             */
+            psels = <NRF_PSEL(TWIM_SDA, 1, 10)>,
+                    <NRF_PSEL(TWIM_SCL, 1, 11)>;
+            
+            /* * 关键：启用芯片内部上拉电阻。
+             * 如果你的模块上没有物理电阻，这行代码能救命。
+             */
+            bias-pull-up; 
+        };
+    };
+    /* 2. 定义睡眠/低功耗时的引脚配置 */
+    i2c22_sleep: i2c22_sleep {
+        group1 {
+            psels = <NRF_PSEL(TWIM_SDA, 1, 10)>,
+                    <NRF_PSEL(TWIM_SCL, 1, 11)>;
+            low-power-enable; /* 低功耗模式 */
+        };
+    };
+};
+/* 3. 将上面的配置应用到 i2c22 控制器 */
+&i2c22 {
+    status = "okay";
+    pinctrl-0 = <&i2c22_default>;
+    pinctrl-1 = <&i2c22_sleep>;
+    pinctrl-names = "default", "sleep";
+    
+    /* 设置 I2C 速度为标准 100kHz，DRV2605 跑这个速度最稳 */
+    clock-frequency = <I2C_BITRATE_STANDARD>; 
+    /* 定义挂载的设备 */
+    drv2605l: drv2605l@5a {
+        compatible = "i2c-device"; /* 使用通用ID，配合你的C代码手动驱动 */
+        reg = <0x5a>;
+    };
+};

@@ -1,0 +1,14 @@
+Compact KNN reproducibility summary
+
+Feature table: analysis_outputs\ch6_window_features_2s.csv
+Training participants: person_1, person_2, person_3, person_4
+Test participant: person_5
+Compact features: gyro_x_rms, gyro_x_std, gyro_x_range, gyro_mag_std, gyro_mag_max, gyro_mag_rms, gyro_mag_range, gyro_mag_mean, accel_z_max, accel_z_range, accel_z_std, acc_motion_mag_std
+KMeans: 64 prototypes per class, random_state=42, n_init=10
+Compact KNN: k=7, distance-weighted voting
+
+                model  accuracy  balanced_accuracy  precision   recall       f1  reference_points
+             Full KNN  0.996177           0.969125   0.974843 0.939394 0.956790              9391
+Compact prototype KNN  0.996450           0.963493   0.993506 0.927273 0.959248               128
+
+Generated header: analysis_outputs\ch6_compact_knn_model_reproduced.h

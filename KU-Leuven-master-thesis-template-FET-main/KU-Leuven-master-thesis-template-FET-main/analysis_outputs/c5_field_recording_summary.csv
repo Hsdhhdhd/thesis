@@ -1,0 +1,5 @@
+participant,sensor,rows,duration_min,global_rate_hz,active_dt_ms,gap_count_gt_1s,overlap_min
+P1,Shimmer,2199004,365.919,100.159,9.979,0,364.989
+P1,XIAO wearable,3526080,392.181,149.849,7.000,57,364.989
+P2,Shimmer,2213806,368.294,100.183,9.979,0,367.218
+P2,XIAO wearable,3202544,395.084,135.100,6.000,4,367.218
