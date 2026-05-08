@@ -1,10 +1,41 @@
-\chapter{Wearable System Design}\label{ch:design}
+\chapter{Methods}\label{ch:methods}
 
-\section{System Overview}\label{sec:design_overview}
+This chapter describes the methods used to address the four thesis objectives. Objective~1 concerns the design and implementation of the closed-loop sacrum-mounted wearable. Objective~2 evaluates whether the prototype data can distinguish static sitting from pelvic rotation. Objective~3 evaluates whether the prototype IMU signals are comparable with a research-grade Shimmer IMU. Objective~4 evaluates whether real-time detection and haptic feedback can run within the target device constraints. Results are reported separately in Chapter~\ref{ch:results}.
 
-The prototype is a body-worn research unit that monitors seated pelvic-rotation movement during prolonged sitting and provides haptic feedback when no pelvic rotation has been detected for a configured period. The design follows the research gap in Chapter~\ref{ch:introduction}: the study requires sensing near the relevant body segment, labelled field recording, local decision-making, and immediate cue delivery. A pelvis-region placement is used because the target movement occurs in the lower trunk rather than at the wrist. Labelled logging is needed because the classifier is trained from field recordings collected in realistic sitting contexts. Local inference is used because haptic feedback should not depend on a laptop or cloud connection. Compact and low-cost hardware also supports repeated field prototyping with multiple wearable units.
+\section{Objective-Method Alignment}
 
-The functional architecture is shown in Figure~\ref{fig:system_architecture}. The IMU on the XIAO nRF54L15 Sense measures three-axis acceleration and angular velocity near the pelvis. The microcontroller processes the values and tracks whether pelvic rotation has occurred. If no pelvic rotation is detected for the configured 10~min firmware interval, the microcontroller drives a DRV2605L haptic driver to actuate a coin vibration motor for one second. The same data can be transmitted over Bluetooth Low Energy (BLE) to a smartphone or PC for logging, annotation, and offline analysis.
+The methods are organised by objective. Section~\ref{sec:method_obj1} describes the prototype design and implementation. Section~\ref{sec:labelled_dataset} describes the labelled sitting dataset and classifier evaluation. Section~\ref{sec:shimmer_validation} describes the Shimmer/XIAO comparability evaluation. Section~\ref{sec:compact_timing_protocol} describes compact deployment and timing measurement.
+
+\section{Method for Objective 1: Prototype Design and Implementation}\label{sec:method_obj1}
+
+This section describes how the prototype hardware and its two supporting software backends were built. The description follows three parts. First, the wearable hardware is described in terms of the selected components, electrical connections, IMU sampling configuration, and BLE output signal. Second, the Android backend is described as the mobile field-collection tool connected to the wearable. Third, the PC receiver backend is described as the researcher-side tool for bench testing, signal inspection, and export. Later data-processing, reference-comparison, and embedded-evaluation methods are described under Objectives~2--4.
+
+The technical route is shown in Figure~\ref{fig:system_architecture}. The prototype is a body-worn research unit for recording pelvis-region IMU data and delivering a local vibration cue. The XIAO nRF54L15 Sense provides the microcontroller unit (MCU), the BLE radio, and the on-board IMU. The IMU measures three-axis acceleration and angular velocity near the pelvis. The MCU packages the six-axis data stream for BLE transmission to either the Android application or the PC receiver. The same MCU board is electrically connected to the DRV2605L haptic driver, which provides the actuation path for the coin vibration motor.
+
+\subsection{Wearable Hardware}\label{sec:wearable_hardware}
+
+\subsubsection{Hardware Used and Selection Rationale}
+
+A pelvis-region placement is used because the target movement occurs in the lower trunk. The hardware used in the prototype consists of a compact IMU-enabled microcontroller board, a haptic driver, a coin vibration motor, a battery, and a 3D-printed enclosure. The main components are listed in Table~\ref{tab:prototype_components}.
+
+\begin{table}[!htbp]
+    \centering
+    \footnotesize
+    \caption{Main hardware components.}
+    \label{tab:prototype_components}
+    \begin{tabularx}{\linewidth}{lX}
+        \toprule
+        Component & Role \\
+        \midrule
+        XIAO nRF54L15 Sense & Microcontroller + embedded IMU + BLE radio \\
+        LSM6DS3TR-C IMU & Three-axis acceleration and angular velocity sensing \\
+        DRV2605L & Haptic driver for the vibration motor \\
+        Coin vibration motor & Local tactile reminder to the wearer \\
+        500~mAh battery & Internal power source \\
+        3D-printed enclosure & Carrier and housing \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
 
 \begin{figure*}[!tbp]
     \centering
@@ -17,12 +48,12 @@ The functional architecture is shown in Figure~\ref{fig:system_architecture}. Th
         arrow/.style={-Latex, thick}
     ]
         \node[block] (imu)   {IMU (LSM6DS3TR-C)\\$a_{x,y,z}$, $g_{x,y,z}$};
-        \node[block, right=of imu] (mcu)   {XIAO nRF54L15\\inactivity logic};
+        \node[block, right=of imu] (mcu)   {XIAO nRF54L15\\MCU + BLE};
         \node[block, right=of mcu] (drv)   {DRV2605L\\haptic driver};
         \node[block, right=of drv] (motor) {Vibration motor\\1\,s reminder};
         \node[block, below=12mm of mcu] (ble) {BLE notification\\(6-axis stream)};
-        \node[block, below=of ble, xshift=-25mm] (phone) {Android app\\logging + labelling};
-        \node[block, below=of ble, xshift=25mm]  (pc)    {PC receiver\\monitor + export};
+        \node[block, below=of ble, xshift=-25mm] (phone) {Android backend\\logging + labelling};
+        \node[block, below=of ble, xshift=25mm]  (pc)    {PC receiver\\record + export};
 
         \draw[arrow] (imu)--(mcu);
         \draw[arrow] (mcu)--(drv);
@@ -31,62 +62,27 @@ The functional architecture is shown in Figure~\ref{fig:system_architecture}. Th
         \draw[arrow] (ble)--(phone);
         \draw[arrow] (ble)--(pc);
     \end{tikzpicture}
-    \caption{Functional architecture of the wearable pelvic-rotation monitoring and haptic feedback system. The on-device feedback loop runs from the pelvis-mounted IMU $\to$ microcontroller $\to$ haptic driver $\to$ motor; the same data are also streamed over BLE to a phone or PC for logging and offline analysis.}
+    \caption{Hardware and software route of the wearable prototype. The pelvis-mounted IMU is read by the XIAO nRF54L15, streamed over BLE to the Android or PC receiver backend, and connected electrically to a DRV2605L haptic driver and coin vibration motor.}
     \label{fig:system_architecture}
 \end{figure*}
 
-Figure~\ref{fig:device_external} shows the assembled prototype.
+The Seeed Studio XIAO nRF54L15 Sense was used as the central hardware platform. It was selected because it integrates the microcontroller, the LSM6DS3TR-C IMU, and the BLE radio on a single compact board. This reduces wiring, board area, and component count compared with a separate microcontroller and sensor module.
 
-The architecture separates the research workflow from the final feedback loop. During data collection, the BLE stream is used by the Android and PC tools to inspect signals and store labelled files. During deployment, the compact classifier and inactivity timer run on the wearable itself. This separation allows the same hardware to support both experimental recording and stand-alone feedback.
+The LSM6DS3TR-C IMU is the sensing element used to measure pelvis-region motion. It provides three-axis acceleration and three-axis angular velocity, which are sufficient for the binary movement-detection task studied in this thesis.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\linewidth]{c3_device_external.png}
-    \caption{External view of the wearable prototype. The black carrier plate sits on the orange enclosure that houses the battery.}
-    \label{fig:device_external}
-\end{figure}
+The DRV2605L was used as the haptic driver between the microcontroller and the vibration motor. It provides the actuator interface controlled by the XIAO firmware.
 
-\section{Mechanical Prototype}\label{sec:mechanical_prototype}
+The vibration actuator was an 8~mm by 3~mm coin vibration motor. This motor was selected because it is small and can provide a local tactile cue at the lower back. Its rated voltage is 3--5~V, and its rated current is 67~mA.
 
-The prototype was assembled with a 3D-printed perforated carrier plate and an orange enclosure. The XIAO nRF54L15 Sense and the DRV2605L were mounted on the black carrier plate and fixed mechanically with hot-melt glue. A 500~mAh battery is housed inside the enclosure, which measures \(5.4 \times 3.0 \times 1.5~\mathrm{cm}\). The prototype component cost was below EUR 30, excluding the phone, PC, and Shimmer reference (XIAO board $\approx$EUR 15, DRV2605L module and motor below EUR 10, battery and printed enclosure together $\approx$EUR 5).
+The 500~mAh battery provided an internal power source. The 3D-printed perforated carrier plate and orange enclosure provided the housing. The XIAO nRF54L15 Sense and the DRV2605L were mounted on the black carrier plate and fixed with hot-melt glue. The battery is housed inside the enclosure, which measures \(5.4 \times 3.0 \times 1.5~\mathrm{cm}\). The wearable prototype component cost was below EUR 30 (XIAO board $\approx$EUR 15, DRV2605L module and motor below EUR 10, battery and printed enclosure together $\approx$EUR 5).
 
-The enclosure was designed as a functional research prototype rather than a final consumer device. The printed body protects the battery and gives a flat contact surface for attachment, while the perforated carrier plate leaves the electronics visible and accessible for debugging. This choice made it easier to adjust wiring and firmware during development, but it also limited mechanical robustness. In particular, the battery contact method was later identified as a source of intermittent recording gaps during field use.
+The enclosure was designed as a functional research prototype rather than a final consumer device. The printed body protects the battery and gives a flat contact surface for attachment, while the perforated carrier plate leaves the electronics visible and accessible for debugging. This choice made it easier to adjust wiring and firmware during development.
 
-Table~\ref{tab:prototype_components} lists the main hardware components and their function in the prototype. The table separates the sensing and processing board from the feedback elements and the mechanical housing, because each part supports a different step in the sensing-to-cue pipeline.
+\subsubsection{Hardware Interfaces and Connections}
 
-\begin{table}[H]
-    \centering
-    \footnotesize
-    \caption{Main hardware components.}
-    \label{tab:prototype_components}
-    \begin{tabularx}{\linewidth}{lX}
-        \toprule
-        Component & Role \\
-        \midrule
-        XIAO nRF54L15 Sense & Microcontroller + embedded IMU + BLE radio \\
-        LSM6DS3TR-C IMU & Three-axis acceleration and angular velocity \\
-        DRV2605L & Haptic driver for the vibration motor \\
-        Coin vibration motor & Tactile reminder to the wearer \\
-        500~mAh battery & Internal power source \\
-        3D-printed enclosure & Mechanical housing \\
-        \bottomrule
-    \end{tabularx}
-\end{table}
+The hardware uses two wired interfaces in addition to the on-board IMU and BLE radio. First, the XIAO and the DRV2605L are connected through power and an \(I^2C\) bus. The XIAO ground (GND) and 3V3 supply pins are connected to the DRV2605L GND and VIN pins. XIAO pin D4 serves as the serial data line (SDA), and XIAO pin D5 serves as the serial clock line (SCL). Second, the vibration motor is connected to the positive and negative motor output terminals of the DRV2605L. The connections are summarised in Table~\ref{tab:electrical_connections}. The wiring was intentionally kept minimal: the IMU and BLE radio are already integrated on the XIAO board, so the external circuit only adds the haptic driver, motor, and battery.
 
-The internal arrangement of the enclosure is shown in Figure~\ref{fig:device_internal}. The open layout made debugging easier during development, while the orange enclosure provided the contact surface used for body attachment.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\linewidth]{c3_device_internal.png}
-    \caption{Internal view of the prototype showing the enclosure and the 500~mAh battery.}
-    \label{fig:device_internal}
-\end{figure}
-
-\section{Electrical Integration}\label{sec:electrical_integration}
-
-The XIAO and the DRV2605L are connected through power and an \(I^2C\) bus. The XIAO ground (GND) and 3V3 supply pins are connected to the DRV2605L GND and VIN pins. XIAO pin D4 serves as the serial data line (SDA), and XIAO pin D5 serves as the serial clock line (SCL). The vibration motor is connected to the positive and negative motor output terminals of the DRV2605L. The connections are summarised in Table~\ref{tab:electrical_connections}. The wiring was intentionally kept minimal: the IMU is already integrated on the XIAO board, and the external circuit only adds the haptic driver, motor, and battery.
-
-\begin{table}[H]
+\begin{table}[!htbp]
     \centering
     \footnotesize
     \caption{Electrical connections.}
@@ -104,27 +100,117 @@ The XIAO and the DRV2605L are connected through power and an \(I^2C\) bus. The X
     \end{tabular*}
 \end{table}
 
-\section{Sensor Node and Configuration}\label{sec:embedded_sensor_node}
+For body attachment, the enclosure is fixed to a sterile island dressing (10~cm by 15~cm) using double-sided tape, and the dressing is applied to the skin close to the sacrum, at the lower-back/pelvic region. This placement is more directly informative for lower-trunk and pelvic motion than wrist placements, and is consistent with the sacral/pelvic placement reported by Liao et al. for IMU-based pelvic-rotation detection. The placement also keeps the device near the vibration target, so the same body location is used for sensing and feedback.
 
-The Seeed Studio XIAO nRF54L15 Sense was selected because it integrates the microcontroller, the LSM6DS3TR-C IMU, and the BLE radio on a single compact board~\citep{seeedstudio2025xiao_nrf54l15_sense}. This reduces wiring, board area, and component count compared with a separate microcontroller and sensor module. The board version used in the evaluated prototype was the XIAO nRF54L15 Sense development board available during the 2025--2026 thesis work. The accelerometer and gyroscope are configured at 208~Hz, which gives sufficient temporal resolution for short pelvic-rotation movements while remaining practical for wireless logging~\citep{stmicroelectronics2017lsm6ds3trc}. The recorded sensor stream contains six raw channels: \(a_x, a_y, a_z\) (acceleration) and \(g_x, g_y, g_z\) (angular velocity).
+\subsubsection{IMU Data and Sampling Frequency}
 
-The IMU configuration is deliberately simple. The thesis uses raw acceleration and angular velocity channels, then derives magnitude-based features during offline processing and embedded inference. This avoids relying on absolute orientation estimates, which would require additional calibration and would be more sensitive to exact placement. For the intended binary decision, the presence of movement in a recent window is more important than the reconstruction of a precise pelvic angle.
+The firmware sampled the IMU at 208~Hz. Each sample contained six raw motion channels: three-axis acceleration \((a_x, a_y, a_z)\) and three-axis angular velocity \((g_x, g_y, g_z)\). In the firmware, acceleration is read in \si{\meter\per\second\squared} and angular velocity in radians per second from the Zephyr sensor API before being encoded for BLE transmission.
 
-\section{Haptic Feedback Module}\label{sec:haptic_feedback_module}
+\subsubsection{BLE Output Signal and Settings}
 
-The motor used in the prototype is an 8~mm by 3~mm coin vibration motor with a rated voltage of 3--5~V and a rated current of 67~mA according to the supplier listing~\citep{sourcingmap_coin_vibration_motor}. A formal datasheet was not available for that exact retail item; a comparable 8~mm coin vibration motor datasheet reports an 8~mm diameter, 3.4~mm body length, 3~V rated operating voltage, and 66~mA typical rated current~\citep{precisionmicrodrives308100}. The motor is compact enough to fit inside the enclosure and provides a local tactile output at the lower back. The DRV2605L is used so that the microcontroller does not drive the motor directly and so that future versions can support more controlled haptic patterns. In the deployed firmware, the inactivity threshold is set to 10~min and the motor is driven for one second whenever that condition is met. The current version uses a fixed vibration intensity; later versions could vary the pattern, intensity, or interval to match user preference.
+The device exposes the IMU stream through BLE notifications. The BLE settings used by the receiver backends are listed in Table~\ref{tab:ble_identifiers}. The advertised name allows the Android and PC software to identify the wearable, the service UUID identifies the custom BLE service, and the notification UUID identifies the characteristic that emits the IMU packets.
 
-The haptic output is included as a cue-delivery mechanism, not as a validated behavioural intervention. Its role in this thesis is to show that the sensing and classification result can be connected to an immediate local reminder. Whether the vibration is noticeable, acceptable, or effective over longer use is left for future work rather than assumed in the design.
-
-\section{Wearing Position}\label{sec:wearable_placement}
-
-The device is worn close to the sacrum, at the lower-back/pelvic region. This placement is more directly informative for lower-trunk and pelvic motion than wrist placements, and is consistent with the sacral/pelvic placement reported by Liao et al.~\citep{liao2026imu_pelvic_rotation} for IMU-based pelvic-rotation detection. The placement also keeps the device near the vibration target, so the same body location is used for sensing and feedback.
-
-For body attachment, the enclosure is fixed to a sterile island dressing (10~cm by 15~cm) using double-sided tape, and the dressing is applied to the skin (Figure~\ref{fig:wearing_on_body}). This two-layer approach distributes the adhesive load, gives a stable short-session contact surface, and lets the dressing be replaced between sessions without repositioning the device. It was chosen for the pilot sessions because it is simple, inexpensive, and compatible with different participants.
-
-\begin{figure}[!htbp]
+\begin{table}[!htbp]
     \centering
-    \includegraphics[width=0.52\linewidth]{c3_wearing_on_body.jpg}
-    \caption{Prototype attached to the sacral/pelvic region via the sterile island dressing during a wearing session.}
-    \label{fig:wearing_on_body}
-\end{figure}
+    \scriptsize
+    \caption{BLE advertising name and subscription identifiers.}
+    \label{tab:ble_identifiers}
+    \begin{tabularx}{\linewidth}{@{}l>{\raggedright\arraybackslash}X@{}}
+        \toprule
+        Item & Value \\
+        \midrule
+        Advertised name & \path{ble-imu-sensor} \\
+        Service UUID & \path{12345678-1234-5678-1234-56789abcdef0} \\
+        Notification UUID & \path{12345678-1234-5678-1234-56789abcdef1} \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+Each BLE notification carries a compact 12-byte payload, decoded as six little-endian signed 16-bit integers for three-axis acceleration and angular velocity (Table~\ref{tab:ble_payload_format}). The payload contains only the six motion values and leaves timestamping to the receiving software during logging.
+
+\begin{table}[!htbp]
+    \centering
+    \footnotesize
+    \caption{BLE notification payload format.}
+    \label{tab:ble_payload_format}
+    \begin{tabularx}{\linewidth}{llX}
+        \toprule
+        Bytes & Field & Description \\
+        \midrule
+        0--1   & \texttt{accel\_x} & Raw acceleration $X$ \\
+        2--3   & \texttt{accel\_y} & Raw acceleration $Y$ \\
+        4--5   & \texttt{accel\_z} & Raw acceleration $Z$ \\
+        6--7   & \texttt{gyro\_x}  & Raw angular velocity $X$ \\
+        8--9   & \texttt{gyro\_y}  & Raw angular velocity $Y$ \\
+        10--11 & \texttt{gyro\_z}  & Raw angular velocity $Z$ \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+Acceleration is encoded in \(10^{-3}\,\si{\meter\per\second\squared}\) units, and angular velocity is encoded in milliradians per second.
+
+\subsection{Android Backend}\label{sec:android_app}
+
+The Android backend is the mobile field-collection software. The evaluated application used package \path{com.l1172.bleimuandroid}, versionName \texttt{1.0.1}, versionCode \texttt{2}, compile SDK 34, and target SDK 34. Its role was to scan for the wearable, connect to it through BLE, subscribe to the IMU notification characteristic, decode the 12-byte motion packets, and save the converted IMU values to CSV files.
+
+The Android backend can maintain two wearable connections simultaneously, which was required for multi-device field sessions. During recording, the backend writes packets to a comma-separated values (CSV) file in the phone's external documents directory. A foreground service keeps BLE and Global Positioning System (GPS) collection active when the screen is locked. GPS samples are obtained from Android's fused location provider; each IMU row is stamped with \texttt{gps\_age\_ms}, the time difference between the IMU packet and the most recent GPS fix.
+
+The backend stores annotation state separately for each connected wearable. When an annotation state is active, the current label is written into every CSV row received from that device until the annotation is stopped. Default labels are loaded from the app configuration, so the recording protocol can include labels such as static sitting, pelvic rotation, walking, or transport segments. Each annotation is assigned a segment identifier and a start timestamp, allowing later processing to recover labelled time segments instead of treating each row as an isolated sample.
+
+This annotation design is important for the field protocol. The labels are not inferred automatically by the phone; they are entered during the session and later used to select clean seated segments. Recording the label on every row makes the files easy to process, while the segment identifier preserves the fact that consecutive rows belong to the same instructed activity period. Rows outside an active annotation can be kept in the raw log for completeness but excluded from the labelled analysis dataset.
+
+The Android CSV stores one row per packet, with device identity, phone receive timestamp, six converted IMU channels, GPS metadata, and annotation fields (Table~\ref{tab:android_csv_format}). Rows without an active annotation leave the annotation columns blank.
+
+\begin{table}[!htbp]
+    \centering
+    \footnotesize
+    \caption{CSV fields recorded by the Android application.}
+    \label{tab:android_csv_format}
+    \begin{tabularx}{\linewidth}{lX}
+        \toprule
+        Field group & Columns \\
+        \midrule
+        Device + time & \texttt{device\_label}, \texttt{timestamp}, \texttt{epoch\_ms} \\
+        IMU values    & \texttt{accel\_\{x,y,z\}}, \texttt{gyro\_\{x,y,z\}} \\
+        GPS time      & \texttt{gps\_fix\_timestamp}, \texttt{gps\_fix\_epoch\_ms} \\
+        GPS position  & \texttt{gps\_lat}, \texttt{gps\_lon} \\
+        GPS quality   & \texttt{gps\_accuracy\_m}, \texttt{gps\_provider}, \texttt{gps\_age\_ms} \\
+        GPS motion    & \texttt{gps\_altitude\_m}, \texttt{gps\_speed\_mps}, \texttt{gps\_bearing\_deg} \\
+        Annotation    & \texttt{annotation\_label}, \texttt{annotation\_segment\_id}, \texttt{annotation\_started\_timestamp}, \texttt{annotation\_started\_epoch\_ms} \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+Before the pilot tests, the Android backend was checked for BLE scanning, per-device connection, packet logging, GPS metadata storage, and row-level annotation fields. These checks confirmed that the mobile backend could collect labelled field data from the wearable.
+
+\subsection{PC Receiver Backend}\label{sec:pc_receiver}
+
+The PC receiver backend is the researcher-side software for bench testing, debugging, and export. It is implemented in Python using \texttt{bleak} (\(\ge 0.20.0\)) for BLE communication and \texttt{openpyxl} (\(\ge 3.0.0\)) for Excel export. Like the Android backend, it connects to the wearable over BLE, subscribes to the notification characteristic listed in Table~\ref{tab:ble_identifiers}, and decodes the same 12-byte notification payload according to Table~\ref{tab:ble_payload_format}.
+
+Incoming notifications are parsed into converted acceleration and angular-velocity channels using the same receiver-side unit conversion as the Android backend. Additional derived channels, including gravity-removed motion acceleration and quaternion estimates, are computed in the receiver pipeline for later analysis.
+
+To keep acquisition independent of display refresh or file I/O timing, incoming packets are pushed onto a queue and written to CSV by a dedicated writer thread. The receiver can also export buffered data to an Excel file using \texttt{openpyxl}. The PC backend was mainly used to verify whether the prototype produced stable decoded streams before and after field sessions.
+
+The PC receiver writes its own CSV file with raw and derived signals (Table~\ref{tab:pc_csv_format}). Compared with the Android log it omits annotation and GPS fields but adds gravity-removed motion acceleration and quaternion estimates that were useful for offline bench checks.
+
+\begin{table}[!htbp]
+    \centering
+    \footnotesize
+    \caption{CSV fields recorded by the PC receiver.}
+    \label{tab:pc_csv_format}
+    \begin{tabularx}{\linewidth}{lX}
+        \toprule
+        Field group & Columns \\
+        \midrule
+        Time              & \texttt{timestamp} \\
+        Raw acceleration  & \texttt{accel\_\{x,y,z\}} \\
+        Motion accel.     & \texttt{accel\_motion\_\{x,y,z\}} \\
+        Angular velocity  & \texttt{gyro\_\{x,y,z\}} \\
+        Quaternion        & \texttt{quat\_\{w,x,y,z\}} \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+Before the pilot tests, the PC receiver backend was used to confirm BLE connection, six-axis packet decoding, packet-to-file logging, and recording stability. These checks made it possible to test the wearable on the bench before using the Android backend for mobile field collection.
+
+\FloatBarrier

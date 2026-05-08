@@ -12,7 +12,6 @@
 \usepackage[english]{babel}
 \usepackage[utf8]{inputenc}
 
-\usepackage[numbers,sort&compress]{natbib}
 \usepackage{supertabular}
 \usepackage{listings}
 \usepackage{verbatim}
@@ -23,6 +22,7 @@
 \usepackage{amssymb}
 \usepackage[final]{pdfpages}
 \usepackage{float}
+\usepackage{placeins}
 \usepackage{cuted}
 \usepackage{capt-of}
 \usepackage{longtable}
@@ -37,17 +37,24 @@
 
 \graphicspath{{./images/}}
 
-% Float placement: let figures take more of a page, leave less white space
-\renewcommand{\topfraction}{0.9}
-\renewcommand{\bottomfraction}{0.7}
-\renewcommand{\textfraction}{0.07}
-\renewcommand{\floatpagefraction}{0.75}
-\renewcommand{\dbltopfraction}{0.9}
-\renewcommand{\dblfloatpagefraction}{0.75}
-\setcounter{topnumber}{3}
-\setcounter{bottomnumber}{3}
-\setcounter{totalnumber}{5}
-\setcounter{dbltopnumber}{3}
+% Compact headings for the two-column thesis body.
+\setlength{\parskip}{0.1cm}
+\titlespacing{\chapter}{0pt}{0.1cm}{0.1cm}
+\titlespacing{\section}{0pt}{0.1cm}{0.1cm}
+\titlespacing{\subsection}{0pt}{0.1cm}{0.1cm}
+\titlespacing{\subsubsection}{0pt}{0.1cm}{0.1cm}
+
+% Float placement: allow figures/tables to share pages with text and reduce sparse float pages.
+\renewcommand{\topfraction}{0.97}
+\renewcommand{\bottomfraction}{0.85}
+\renewcommand{\textfraction}{0.03}
+\renewcommand{\floatpagefraction}{0.82}
+\renewcommand{\dbltopfraction}{0.97}
+\renewcommand{\dblfloatpagefraction}{0.82}
+\setcounter{topnumber}{4}
+\setcounter{bottomnumber}{4}
+\setcounter{totalnumber}{8}
+\setcounter{dbltopnumber}{4}
 
 \lstset{
     basicstyle=\scriptsize\ttfamily,
@@ -90,18 +97,18 @@
 
 \preface
 \input{chapters/01-introduction}
+\input{chapters/02-related-work}
+\FloatBarrier
 \input{chapters/02-design}
 \input{chapters/03-implementation}
-\clearpage
-\input{chapters/04-evaluation}
-\clearpage
+\FloatBarrier
 \input{chapters/05-results}
-\clearpage
+\FloatBarrier
 \input{chapters/05-discussion}
-\clearpage
+\FloatBarrier
 \input{chapters/06-conclusion}
 
-\bibliographystyle{ieeetr}
+\bibliographystyle{IEEEtran}
 \bibliography{bibliography}
 
 \appendix

@@ -1,76 +1,88 @@
 \chapter{Results}\label{ch:results}
 
-This chapter reports the results from the evaluation methods in Chapter~\ref{ch:evaluation}. The results are grouped by the same evidence chain used in the thesis: sensor agreement with Shimmer, pilot field-worn trend agreement, detection performance on the labelled train-sitting dataset, and embedded timing of the compact KNN.
+This chapter reports the outcomes corresponding to the methods in Chapter~\ref{ch:methods}. The results are organised by the four thesis objectives: prototype implementation, static-sitting versus pelvic-rotation detection, Shimmer/XIAO signal comparability, and compact embedded deployment feasibility.
 
-\section{Sensor Agreement Results}\label{sec:results_sensor_agreement}
+\section{Objective 1: Prototype Implementation Outcome}\label{sec:results_prototype_outcome}
 
-\subsection{Co-Located Shimmer/XIAO Agreement}
+The final prototype implemented the complete sensing-to-cue pipeline defined in Chapter~\ref{ch:methods}. It combined the XIAO nRF54L15 Sense IMU node, BLE streaming, Android field logging with row-level labels, PC-based monitoring, window-level feature extraction, compact KNN inference, a 10~min inactivity timer, a DRV2605L haptic driver, and a one-second coin-motor vibration cue.
 
-Figure~\ref{fig:shimmer_xiao_comparison} shows the aligned time-series comparison for the co-located recording. The XIAO and Shimmer signals show the same main movement peaks across all acceleration and gyroscope channels. Across all axes, acceleration correlations ranged from 0.856 to 0.923 and gyroscope correlations from 0.816 to 0.864 (Table~\ref{tab:colocated_validation_results}). The estimated lag stayed between \(-0.020\) and 0~s, and NRMSE values ranged from 0.425 to 0.613.
+Figure~\ref{fig:prototype_views} shows the assembled prototype and its internal battery arrangement. The black carrier plate holds the visible electronics, while the orange enclosure houses the internal battery and provides the flat surface used for body attachment. The assembled prototype therefore met the Objective~1 requirement of integrating sensing, wireless data collection, annotation support, embedded decision logic, and local cue delivery in one low-cost wearable research unit. The field wearing setup used during data collection is described in Section~\ref{sec:labelled_dataset}.
 
-\begin{figure*}[!tbp]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=0.94\textwidth,height=0.58\textheight,keepaspectratio]{shimmer_xiao_comparison.png}
-    \caption{Aligned co-located waveform comparison between the Shimmer reference and the custom XIAO-based wearable, across the three acceleration and three gyroscope axes.}
-    \label{fig:shimmer_xiao_comparison}
-\end{figure*}
+    \begin{minipage}[t]{0.49\linewidth}
+        \centering
+        \includegraphics[width=\linewidth,height=0.085\textheight,keepaspectratio]{c3_device_external.png}\\
+        \scriptsize (a) External view
+    \end{minipage}
+    \begin{minipage}[t]{0.49\linewidth}
+        \centering
+        \includegraphics[width=\linewidth,height=0.085\textheight,keepaspectratio]{c3_device_internal.png}\\
+        \scriptsize (b) Internal battery layout
+    \end{minipage}
+    \caption{Prototype implementation outcome: (a) external view and (b) internal battery layout.}
+    \label{fig:prototype_views}
+\end{figure}
 
-\begin{table}[H]
+The prototype was worn close to the sacral/pelvic region using a sterile island dressing and double-sided tape. The Android application and PC receiver both used the same BLE packet format, so bench inspection, field logging, and later embedded deployment were based on the same six-axis IMU stream.
+
+The Android front end is shown in Figure~\ref{fig:android_frontend_outcome}. The discovery screen contained a device list showing BLE names and addresses, plus \texttt{Scan} and \texttt{Connect} buttons. The label screen displayed each connected wearable as a card with name, address, \texttt{Disconnect}, ready-to-label status, four label buttons (\texttt{standing}, \texttt{move}, \texttt{nomove}, \texttt{standupanddown}), and \texttt{Stop Label}. The telemetry screen used one card per wearable and showed packet rate, acceleration \(x/y/z\) in \si{\meter\per\second\squared}, and gyroscope \(x/y/z\) in \si{\degree\per\second}. This allowed the researcher to select nearby wearables, label each device separately, and check live streaming during field collection.
+
+\begin{figure}[H]
     \centering
-    \scriptsize
-    \caption{Co-located agreement after alignment.}
-    \label{tab:colocated_validation_results}
-    \begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}llrrrr@{}}
-        \toprule
-        Signal & Axis & r & Max r & Lag (s) & NRMSE \\
-        \midrule
-        Accel & X & 0.907 & 0.910 & -0.010 & 0.517 \\
-        Accel & Y & 0.856 & 0.856 & -0.010 & 0.613 \\
-        Accel & Z & 0.923 & 0.923 & -0.010 & 0.425 \\
-        Gyro  & X & 0.838 & 0.838 &  0.000 & 0.568 \\
-        Gyro  & Y & 0.816 & 0.816 &  0.000 & 0.601 \\
-        Gyro  & Z & 0.864 & 0.881 & -0.020 & 0.521 \\
-        \bottomrule
-    \end{tabular*}
-\end{table}
+    \begin{minipage}[t]{0.31\linewidth}
+        \centering
+        \includegraphics[width=\linewidth,height=0.105\textheight,keepaspectratio]{c4_mobile_discovery.jpg}\\
+        \scriptsize (a) Discovery
+    \end{minipage}
+    \begin{minipage}[t]{0.31\linewidth}
+        \centering
+        \includegraphics[width=\linewidth,height=0.105\textheight,keepaspectratio]{c4_mobile_label_controls.jpg}\\
+        \scriptsize (b) Labels
+    \end{minipage}
+    \begin{minipage}[t]{0.31\linewidth}
+        \centering
+        \includegraphics[width=\linewidth,height=0.105\textheight,keepaspectratio]{c4_mobile_live_telemetry_clean.jpg}\\
+        \scriptsize (c) Telemetry
+    \end{minipage}
+    \caption{Android front-end outcome: (a) device discovery, (b) per-device labelling, and (c) live telemetry.}
+    \label{fig:android_frontend_outcome}
+\end{figure}
 
-The co-located results support the use of the XIAO signal for trend-level movement detection. The correlations indicate similar temporal patterns, while the non-zero NRMSE values show that the two sensors should not be treated as amplitude-equivalent measurement systems.
+The PC receiver front end is shown in Figure~\ref{fig:pc_receiver_frontend_outcome}. The left side contained a device-list dropdown with \texttt{Scan Devices}, \texttt{Connect Device}, and \texttt{Disconnect} buttons. The real-time data panel displayed acceleration, motion acceleration, angular velocity, quaternion estimate, timestamp, and packet count. The recording panel included auto-recording status, \texttt{Start Recording}, \texttt{Stop Recording}, \texttt{Save Data (CSV)}, \texttt{Export to Excel}, and \texttt{Clear Data}. The lower-left area showed connection state and scan logs, while the right side showed live acceleration, angular-velocity, and motion-acceleration scatter plots with colour-coded axes. This interface verified BLE connection, packet decoding, and signal plausibility during bench testing and pilot preparation.
 
-\subsection{Pilot Field-Worn Trend Agreement}
-
-The field-worn trend comparison used the two usable paired recordings from the pilot study. Acceleration motion magnitude correlated at 0.918 for P1 and 0.855 for P2, while gyroscope magnitude correlated at 0.908 for P1 and 0.864 for P2. After lag correction, maximum cross-correlations reached 0.915--0.981. The estimated best lag was 1.2--1.3~s (Table~\ref{tab:field_trend_results}). Figure~\ref{fig:field_trend_comparison} shows the corresponding long trend comparison.
-
-\begin{table}[H]
+\begin{figure}[H]
     \centering
-    \scriptsize
-    \caption{Field-worn trend agreement in the pilot study. P1 and P2 are participant identifiers.}
-    \label{tab:field_trend_results}
-    \begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}llrrrr@{}}
-        \toprule
-        Part. & Signal & r & Max r & Lag (s) & NRMSE \\
-        \midrule
-        P1 & Accel.\ mag. & 0.918 & 0.938 & 1.20 & 0.530 \\
-        P1 & Gyro mag.    & 0.908 & 0.974 & 1.20 & 0.232 \\
-        P2 & Accel.\ mag. & 0.855 & 0.915 & 1.30 & 0.476 \\
-        P2 & Gyro mag.    & 0.864 & 0.981 & 1.30 & 0.206 \\
-        \bottomrule
-    \end{tabular*}
-\end{table}
+    \includegraphics[width=\linewidth,height=0.17\textheight,keepaspectratio]{c4_pc_receiver_gui.png}
+    \caption{PC receiver front-end outcome with connection controls, numeric sensor values, recording/export controls, status log, and live signal plots.}
+    \label{fig:pc_receiver_frontend_outcome}
+\end{figure}
 
-\begin{figure*}[!tbp]
-    \centering
-    \includegraphics[width=0.94\textwidth,height=0.42\textheight,keepaspectratio]{c5_field_trend_comparison.png}
-    \caption{Long field-worn trend comparison for two pilot-study participants. Signals are shown as acceleration motion magnitude and gyroscope magnitude over the overlapping recording period, after 10~Hz resampling and centred 5~s moving-average smoothing for visualisation only.}
-    \label{fig:field_trend_comparison}
-\end{figure*}
-
-The field-worn correlations are lower than a controlled laboratory equivalence test would require, but that is not the claim being made here. The result shows that the XIAO captured long movement trends similar to the Shimmer reference during the pilot outing. The 1.2--1.3~s lag indicates a timing-chain offset in the field setup and is discussed in Chapter~\ref{ch:discussion}.
-
-\section{Detection Results}\label{sec:results_detection}
+\section{Objective 2: Pelvic Rotation Detection}\label{sec:results_detection}
 
 \subsection{Classifier Comparison}
 
-Table~\ref{tab:ch6_model_results} reports the held-out performance of all five classifiers on participant 5. Static sitting outnumbers pelvic rotation 21:1 in the test set, so balanced accuracy and pelvic-rotation F1-score are more informative than accuracy alone. KNN achieved the highest F1-score at 0.957.
+The retained classifier dataset consisted of 98 clean labelled segment files: 66 static-sitting segments and 32 pelvic-rotation segments. After 2~s windowing with a 1~s step, the participant-level window counts were distributed as shown in Table~\ref{tab:ch6_window_counts}. The held-out participant test set was imbalanced, with static sitting outnumbering pelvic rotation 21:1.
+
+\begin{table}[!htbp]
+    \centering
+    \footnotesize
+    \caption{Window counts per participant after 2~s windowing with a 1~s step.}
+    \label{tab:ch6_window_counts}
+    \begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}lrrr@{}}
+        \toprule
+        Participant & Static & Pelvic rot. & Total \\
+        \midrule
+        P1 & 2,425 & 102 & 2,527 \\
+        P2 & 2,641 &  70 & 2,711 \\
+        P3 & 1,912 & 106 & 2,018 \\
+        P4 & 2,014 & 121 & 2,135 \\
+        P5 & 3,497 & 165 & 3,662 \\
+        \bottomrule
+    \end{tabular*}
+\end{table}
+
+Table~\ref{tab:ch6_model_results} reports the held-out performance of all five classifiers on participant 5. KNN achieved the highest pelvic-rotation F1-score at 0.957.
 
 \begin{table}[H]
     \centering
@@ -92,23 +104,104 @@ Table~\ref{tab:ch6_model_results} reports the held-out performance of all five c
 
 Out of 165 pelvic-rotation windows, the selected KNN correctly identified 155 and missed 10. Out of 3{,}497 static-sitting windows, it classified 3{,}493 correctly and misclassified 4 as pelvic rotation. The corresponding confusion matrix is shown in Figure~\ref{fig:ch6_knn_confusion_matrix}.
 
-\begin{figure}[!tbp]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=0.76\linewidth]{ch6_person5_confusion_matrix_best_f1.png}
+    \includegraphics[width=0.62\linewidth]{ch6_person5_confusion_matrix_best_f1.png}
     \caption{Confusion matrix of the selected \(k=7\) KNN on held-out participant 5.}
     \label{fig:ch6_knn_confusion_matrix}
 \end{figure}
 
-\subsection{Compact KNN and On-Device Timing}
+\section{Objective 3: Shimmer/XIAO Sensor Agreement}\label{sec:results_sensor_agreement}
 
-The compact prototype-based KNN (12 features, 128 KMeans prototypes), described in Section~\ref{sec:compact_knn}, achieved accuracy 0.996, balanced accuracy 0.963, precision 0.994, recall 0.927, and an F1-score of 0.959 on the held-out participant. The full baseline used 90 features and 9{,}391 reference windows, whereas the compact model used 12 features and 128 prototypes (Figure~\ref{fig:full_vs_compact_knn}). The compact model therefore had slightly higher precision and lower recall than the full KNN, and the comparison changes both the feature set and the reference-set size.
+\subsection{Co-Located Shimmer/XIAO Agreement}
 
-\begin{figure*}[!tbp]
+Figure~\ref{fig:shimmer_xiao_comparison} shows the aligned time-series comparison for the co-located recording. The XIAO and Shimmer signals show the same main movement peaks across all acceleration and gyroscope channels. Across all axes, acceleration correlations ranged from 0.856 to 0.923 and gyroscope correlations from 0.816 to 0.864 (Table~\ref{tab:colocated_validation_results}). The estimated lag stayed between \(-0.020\) and 0~s, and NRMSE values ranged from 0.425 to 0.613.
+
+\begin{figure}[H]
     \centering
-    \includegraphics[width=0.92\textwidth]{ch6_full_vs_compact_knn_comparison.png}
+    \includegraphics[width=\linewidth,height=0.30\textheight,keepaspectratio]{shimmer_xiao_comparison.png}
+    \caption{Aligned co-located waveform comparison between the Shimmer reference and the custom XIAO-based wearable, across the three acceleration and three gyroscope axes.}
+    \label{fig:shimmer_xiao_comparison}
+\end{figure}
+
+\begin{table}[H]
+    \centering
+    \scriptsize
+    \caption{Co-located agreement after alignment.}
+    \label{tab:colocated_validation_results}
+    \begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}llrrrr@{}}
+        \toprule
+        Signal & Axis & r & Max r & Lag (s) & NRMSE \\
+        \midrule
+        Accel & X & 0.907 & 0.910 & -0.010 & 0.517 \\
+        Accel & Y & 0.856 & 0.856 & -0.010 & 0.613 \\
+        Accel & Z & 0.923 & 0.923 & -0.010 & 0.425 \\
+        Gyro  & X & 0.838 & 0.838 &  0.000 & 0.568 \\
+        Gyro  & Y & 0.816 & 0.816 &  0.000 & 0.601 \\
+        Gyro  & Z & 0.864 & 0.881 & -0.020 & 0.521 \\
+        \bottomrule
+    \end{tabular*}
+\end{table}
+
+\subsection{Pilot Field-Worn Trend Agreement}
+
+The pilot protocol was intended to collect paired Shimmer/XIAO field recordings for all five participants, but only two produced usable paired recordings; the other three paired reference recordings failed because the Shimmer data were not successfully recorded. These failed reference logs were not used for the field-worn Shimmer comparison, but the corresponding XIAO recordings were still used where clean labelled seated segments were available for the classifier dataset. Table~\ref{tab:field_recording_summary} summarises the two usable paired field recordings.
+
+\begin{table}[!htbp]
+    \centering
+    \scriptsize
+    \caption{Usable paired field-worn recordings from the pilot study. P1 and P2 are participant identifiers.}
+    \label{tab:field_recording_summary}
+    \begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}llrrr@{}}
+        \toprule
+        Part. & Sensor & Rows & Dur.\ (min) & Hz \\
+        \midrule
+        P1 & Shimmer & 2,199,004 & 365.9 & 100.2 \\
+        P1 & XIAO    & 3,526,080 & 392.2 & 149.8 \\
+        P2 & Shimmer & 2,213,806 & 368.3 & 100.2 \\
+        P2 & XIAO    & 3,202,544 & 395.1 & 135.1 \\
+        \bottomrule
+    \end{tabular*}
+\end{table}
+
+The XIAO logs contained 57 gaps longer than 1~s for P1 and 4 for P2. The global rates above include this dead time; the labelled clean segments used for the classifier run at a higher effective active-recording rate. This distinction matters because the field-worn Shimmer comparison uses long overlapping records, whereas the classifier dataset uses manually selected clean seated segments.
+
+Acceleration motion magnitude correlated at 0.918 for P1 and 0.855 for P2, while gyroscope magnitude correlated at 0.908 for P1 and 0.864 for P2. After lag correction, maximum cross-correlations reached 0.915--0.981. The estimated best lag was 1.2--1.3~s (Table~\ref{tab:field_trend_results}). Figure~\ref{fig:field_trend_comparison} shows the corresponding long trend comparison.
+
+\begin{table}[H]
+    \centering
+    \scriptsize
+    \caption{Field-worn trend agreement in the pilot study. P1 and P2 are participant identifiers.}
+    \label{tab:field_trend_results}
+    \begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}llrrrr@{}}
+        \toprule
+        Part. & Signal & r & Max r & Lag (s) & NRMSE \\
+        \midrule
+        P1 & Accel.\ mag. & 0.918 & 0.938 & 1.20 & 0.530 \\
+        P1 & Gyro mag.    & 0.908 & 0.974 & 1.20 & 0.232 \\
+        P2 & Accel.\ mag. & 0.855 & 0.915 & 1.30 & 0.476 \\
+        P2 & Gyro mag.    & 0.864 & 0.981 & 1.30 & 0.206 \\
+        \bottomrule
+    \end{tabular*}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth,height=0.18\textheight,keepaspectratio]{c5_field_trend_comparison.png}
+    \caption{Long field-worn trend comparison for two pilot-study participants. Signals are shown as acceleration motion magnitude and gyroscope magnitude over the overlapping recording period, after 10~Hz resampling and centred 5~s moving-average smoothing for visualisation only.}
+    \label{fig:field_trend_comparison}
+\end{figure}
+
+\section{Objective 4: Compact KNN and On-Device Timing}\label{sec:results_embedded_deployment}
+
+The compact prototype-based KNN (12 features, 128 KMeans prototypes), described in Section~\ref{sec:compact_knn}, achieved accuracy 0.996, balanced accuracy 0.963, precision 0.994, recall 0.927, and an F1-score of 0.959 on the held-out participant. The full baseline used 90 features and 9{,}391 reference windows, whereas the compact model used 12 features and 128 prototypes (Figure~\ref{fig:full_vs_compact_knn}).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.92\linewidth]{ch6_full_vs_compact_knn_comparison.png}
     \caption{Comparison between the offline full KNN (90 features, 9{,}391 reference windows) and the compact prototype-based KNN (12 features, 128 KMeans prototypes) used for embedded deployment.}
     \label{fig:full_vs_compact_knn}
-\end{figure*}
+\end{figure}
 
 Table~\ref{tab:knn_timing} summarises per-window inference timing measured across 24 consecutive non-overlapping 2~s windows on the XIAO nRF54L15 Sense. The timing measurement includes the compact feature extraction path and the KNN distance computation for the stored prototypes.
 
@@ -127,4 +220,4 @@ Table~\ref{tab:knn_timing} summarises per-window inference timing measured acros
     \end{tabularx}
 \end{table}
 
-The 2.73~ms total is below 0.15\% of the 2{,}000~ms window period. This percentage describes compute time only; it is not a power-consumption or battery-life measurement. The deployed firmware uses 56.3~KB of flash and 9.3~KB of RAM, leaving headroom within the target's available flash and RAM budget for the Zephyr RTOS, BLE stack, and future extensions.
+The 2.73~ms total is below 0.15\% of the 2{,}000~ms window period. The deployed firmware uses 56.3~KB of flash and 9.3~KB of RAM, leaving headroom within the target's available flash and RAM budget for the Zephyr RTOS, BLE stack, and future extensions. These values describe compute and memory feasibility; power consumption and battery lifetime were not measured.

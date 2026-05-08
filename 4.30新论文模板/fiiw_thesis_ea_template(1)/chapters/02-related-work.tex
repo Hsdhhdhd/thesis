@@ -1,0 +1,85 @@
+\chapter{Related Work}\label{ch:related_work}
+
+This chapter reviews the literature in the progression suggested by the thesis problem: first, how prolonged sitting and seated posture can be monitored in real-world contexts; second, how monitoring can be connected to intervention and feedback; and third, how closed-loop monitor-to-feedback systems relate to the integrated prototype developed in this thesis.
+
+\section{Real-World Prolonged-Posture Monitoring}
+
+Objective sedentary-behaviour monitoring has a long history, but the measured outcome differs across systems. Some methods estimate total sedentary time, some distinguish sitting from standing, and others count transitions or breaks from sedentary time \cite{chastin2010objective_sedentary}. Accelerometer-based sedentary measurement is one common objective route, but the result depends on sensor position, processing rules, and the target definition \cite{byrom2016objective_sedentary_accelerometers}. Thigh-worn systems such as activPAL have also been validated for everyday posture and motion measurement \cite{grant2006activpal_validation}. These systems are important because they show that sitting time and posture categories can be measured objectively, but they do not by themselves answer whether the pelvis has remained static inside a seated bout.
+
+Several sensing routes are available for seated behaviour monitoring. Camera and depth-based approaches can estimate body pose, but they require line of sight and raise practical acceptance issues in everyday environments \cite{lan2023vision}. Instrumented chairs and cushions can capture seated contact or pressure patterns at one seat \cite{tan2001sensing}. Their limitation is that the sensing surface belongs to the chair. A chair-bound solution is less suitable when the same participant moves between office, home, public transport, and shared spaces.
+
+Body-worn inertial sensing follows the person rather than the furniture. Wearable sensors have been reviewed for spine movement assessment, where compact IMUs make movement analysis possible outside full laboratory motion-capture systems \cite{papi2017wearable}. Sensor placement is still critical, because waist-, thigh-, wrist-, and phone-based sensors can answer different sedentary-behaviour questions \cite{kalisch2022waist_thigh_sedentary}. A wrist or phone sensor may respond strongly to typing, reaching, or phone handling while the pelvis remains still. For pelvic rotation, a sacrum or lower-back placement is closer to the movement source, which is consistent with recent IMU-based pelvic-rotation work where sensor placement is treated as an important factor \cite{liao2026imu_pelvic_rotation}.
+
+The field context also changes the measurement problem. Laboratory posture tasks can be controlled, but everyday seated contexts introduce attachment variation, intermittent wireless logging, participant movement outside the target task, and annotation uncertainty. The train-sitting context used in this thesis is valuable because it is a real prolonged seated setting, but it is also technically difficult: the participant, phone, wearable, and optional reference sensor are all moving through an uncontrolled environment. This motivates mobile logging, row-level labels, and careful separation between clean labelled seated segments and broader raw field recordings.
+
+Detection method choice depends on the monitoring target. For simple sedentary detection, threshold rules, inclinometer logic, or step-count-based inactivity can be sufficient. The present task is narrower and more local: distinguish static sitting from instructed pelvic rotation using pelvis-region acceleration and angular velocity. This target is more detailed than asking whether step count is zero. Feature-based machine learning is therefore justified because the classifier must use short-window signal shape and variation, rather than a single activity-count threshold \cite{khan2013exploratory}. Classical classifiers remain appropriate for this embedded wearable task because their memory and timing requirements are easier to control than larger models \cite{bonaccorso2017machine}.
+
+\section{Real-Time Intervention for Prolonged Sitting}
+
+Monitoring becomes more useful when it supports action. Breaks in sedentary time have been associated with more favourable metabolic markers in observational evidence \cite{healy2008breaks}. Technology-enhanced sedentary-behaviour interventions have also used computer, mobile, and wearable tools to reduce or interrupt sitting time \cite{stephenson2017technology_sedentary_meta}. These studies support the idea that prompts and feedback can be part of prolonged-sitting intervention, but they usually evaluate behavioural outcomes rather than the engineering chain from pelvis-region sensing to local actuation.
+
+Feedback can be delivered through different modalities. Screen prompts and phone notifications are easy to implement, but they require visual attention and may be missed during work or transport. Wearable feedback and biofeedback systems can deliver a more local cue, including vibration, without requiring the user to look at a display \cite{battis2024wearable}. Devices that measure sedentary behaviour and provide feedback show that linking measurement to a user-facing response is practically relevant, although the sensing target and feedback logic differ across systems \cite{gill2018sitfit_feedback_validation}. For this thesis, haptic feedback is treated as a cue-delivery channel, not as proof that behaviour will change.
+
+The trigger condition is as important as the feedback modality. A reminder can be scheduled at fixed intervals, triggered by a posture threshold, generated from broader activity context, or adapted to the user and moment. Just-in-time adaptive intervention research formalises the idea of delivering support when it is relevant to the user's current state or context \cite{nahumshani2018jitai_design}. However, these intervention frameworks do not automatically solve the embedded sensing problem. A pelvis-focused reminder system still needs reliable local sensing, local decision logic, and a feedback output that can be triggered by the detected movement state.
+
+\section{Closed-Loop Monitor-to-Feedback Systems}
+
+In this thesis, a closed-loop wearable means that the sensing result can drive a local feedback action without waiting for offline analysis. This is different from a data logger that only records movement for later processing, and it is also different from a fixed timer that vibrates without considering the detected movement state. The relevant loop is: pelvis-region IMU sensing, window-level processing, movement classification or inactivity logic, and haptic cue delivery.
+
+Related monitor-to-feedback systems show that parts of this loop have already been demonstrated in other contexts. Real-time vibrotactile feedback has been reported in posture-related wearable systems \cite{gopalai2011vibrotactile_posture_system}. Other systems use seat-based feedback, typing-posture biofeedback, smart workwear, or construction-task vibrotactile warning. Table~\ref{tab:closed_loop_related_work} compares representative systems at a hardware, software, and feedback-module level. The table is not intended to rank them, because their target tasks differ and not every paper reports the exact chip or processor used. Its purpose is to show which parts of the sensing-to-feedback chain are present in prior systems.
+
+\begin{table*}[!tbp]
+    \centering
+    \scriptsize
+    \caption{Module-level comparison of representative monitoring-to-feedback systems.}
+    \label{tab:closed_loop_related_work}
+    \begin{tabularx}{\textwidth}{p{0.14\textwidth}p{0.20\textwidth}p{0.22\textwidth}p{0.17\textwidth}X}
+        \toprule
+        Study/system & Sensing hardware and placement & Processing or software route & Feedback module or route & Difference from this thesis \\
+        \midrule
+        LifeChair smart cushion \cite{ishac2018lifechair}
+            & Conductive-fabric sensing integrated into a smart cushion
+            & Seat-based posture interpretation
+            & User-facing sitting-posture feedback from the cushion system
+            & Seat-bound rather than body-worn; does not use a sacrum-mounted IMU or mobile field logging. \\
+        SitFIT feedback device \cite{gill2018sitfit_feedback_validation}
+            & Dedicated sedentary-behaviour feedback device
+            & Sedentary-behaviour measurement and feedback logic
+            & User-facing feedback for sedentary behaviour
+            & Targets broad sedentary behaviour rather than pelvis-region IMU detection, BLE research logging, and embedded haptic actuation. \\
+        Wearable vibrotactile posture system \cite{gopalai2011vibrotactile_posture_system}
+            & Wearable posture-sensing setup
+            & Real-time postural-deviation decision logic
+            & Vibrotactile corrective cueing
+            & Demonstrates wearable haptic posture feedback, but not prolonged-sitting pelvic-rotation monitoring or Shimmer comparison. \\
+        Typing posture biofeedback \cite{kuo2021_wearable_biofeedback_typing}
+            & Wearable biofeedback sensor during prolonged computer typing
+            & Biofeedback condition during a seated computer-work task
+            & Wearable biofeedback to the user
+            & Close to seated work, but not an embedded sacrum-mounted KNN pipeline with Android/PC BLE data collection. \\
+        Smart workwear \cite{jin2020smart_workwear_feedback}
+            & Smart workwear for occupational postural-load sensing
+            & Real-time work-posture interpretation
+            & Vibrotactile feedback integrated into the workwear system
+            & Strong example of real-time ergonomic feedback; target is industrial movement rather than everyday prolonged sitting bouts. \\
+        Construction trunk-flexion feedback \cite{patel2023trunk_flexion_vibrotactile}
+            & Wearable trunk-flexion monitoring during construction tasks
+            & Trunk-flexion exposure trigger
+            & Real-time vibrotactile feedback
+            & Focuses on construction ergonomics; not everyday seated-context pelvic movement, labelled train data, or compact on-device KNN. \\
+        This thesis
+            & XIAO nRF54L15 Sense worn near the sacrum; on-board LSM6DS3TR-C six-axis IMU
+            & BLE stream to Android field logger and PC receiver; compact 12-feature KNN and 10~min inactivity logic on the wearable
+            & DRV2605L haptic driver connected to an 8~mm coin vibration motor for a one-second local cue
+            & Integrates low-cost pelvis-region sensing, two receiver backends, labelled train-sitting data, Shimmer trend comparison, embedded timing, and local actuation in one prototype. \\
+        \bottomrule
+    \end{tabularx}
+\end{table*}
+
+The comparison shows that the advantage of the present work is not that every individual module is novel by itself. IMU sensing, BLE logging, mobile data collection, classifier-based movement recognition, and vibrotactile feedback have all appeared in related forms. The contribution is the way these elements are combined for a specific prolonged-sitting problem: a low-cost sacrum-mounted prototype that records pelvis-region motion, supports Android and PC research workflows, collects labelled real-world seated data, compares the prototype signal with a Shimmer reference, compresses the detector for on-device execution, and drives a local haptic cue from the detected movement state. In other words, the gap addressed here is the full sensing-to-cue integration for everyday prolonged sitting, rather than the invention of a new sensor or feedback actuator.
+
+A closed-loop wearable also has embedded-computing constraints. It cannot rely only on offline classification accuracy; it must satisfy latency, memory, firmware, and power limits on a microcontroller-class device. Embedded machine-learning reviews emphasise this trade-off for wearable and ambulatory systems \cite{diab2022embedded}. TinyML surveys similarly frame model selection as a balance between accuracy, memory footprint, computation, and deployment complexity \cite{abadade2023tinyml}. These constraints affect the classifier choice. A full KNN can be useful for offline evaluation, but it stores the training examples as its reference set. Prototype reduction is a long-established way to reduce nearest-neighbour storage \cite{hart1968condensed}, and prototype-generation methods can serve a similar engineering role by replacing a large reference set with representative examples \cite{triguero2012prototype_generation}.
+
+The remaining gap is therefore an integration gap. Prior work supports sedentary monitoring, seated-posture measurement, prompt-based interventions, wearable vibrotactile feedback, and embedded machine learning. What remains less directly addressed is a single low-cost prototype that connects sacrum-mounted IMU sensing, labelled real-world seated data collection, Shimmer trend comparison, compact on-device detection, and local haptic feedback for prolonged static sitting. This gap motivates the four objectives evaluated in the rest of the thesis.
+
+\FloatBarrier

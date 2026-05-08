@@ -2,11 +2,11 @@
 
 \chapter{IMU Output Data Rate Configuration}\label{app:imu_odr}
 
-The XIAO nRF54L15 Sense documentation identifies the onboard six-axis IMU as the STMicroelectronics LSM6DS3TR-C~\citep{seeedstudio2025xiao_nrf54l15_sense}. In the firmware, both accelerometer and gyroscope sampling frequencies are requested through the Zephyr sensor API at 208~Hz. The LSM6DS3TR-C datasheet lists 208~Hz as a supported output data rate for both the accelerometer and gyroscope~\citep{stmicroelectronics2017lsm6ds3trc}. The measured effective read rate in the clean logged segments is lower than this configured output data rate because the firmware polls the sensor and also performs \(I^2C\), BLE, and operating-system tasks.
+The XIAO nRF54L15 Sense documentation identifies the onboard six-axis IMU as the STMicroelectronics LSM6DS3TR-C. In the firmware, both accelerometer and gyroscope sampling frequencies are requested through the Zephyr sensor API at 208~Hz. The LSM6DS3TR-C datasheet lists 208~Hz as a supported output data rate for both the accelerometer and gyroscope. The measured effective read rate in the clean logged segments is lower than this configured output data rate because the firmware polls the sensor and also performs \(I^2C\), BLE, and operating-system tasks.
 
 \chapter{Coin Vibration Motor Specification}\label{app:haptic_motor_spec}
 
-The vibration motor used in the prototype is an 8~mm by 3~mm coin-type mini vibration motor with a rated voltage of 3--5~V and a rated current of 67~mA according to the supplier listing~\citep{sourcingmap_coin_vibration_motor}. Because no formal datasheet was found for that exact retail item, a comparable 8~mm coin vibration motor datasheet from Precision Microdrives was also consulted for reference specifications~\citep{precisionmicrodrives308100}. Its specification image is reproduced from the supplier listing.
+The vibration motor used in the prototype is an 8~mm by 3~mm coin-type mini vibration motor with a rated voltage of 3--5~V and a rated current of 67~mA according to the supplier listing. Because no formal datasheet was found for that exact retail item, a comparable 8~mm coin vibration motor datasheet from Precision Microdrives was also consulted for reference specifications. Its specification image is reproduced from the supplier listing.
 
 \begin{figure}[H]
     \centering
