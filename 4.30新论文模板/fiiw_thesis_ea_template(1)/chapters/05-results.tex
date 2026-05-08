@@ -49,7 +49,7 @@ The Android front end is shown in Figure~\ref{fig:android_frontend_outcome}. The
     \label{fig:android_frontend_outcome}
 \end{figure}
 
-The PC receiver front end is shown in Figure~\ref{fig:pc_receiver_frontend_outcome}. The left side contained a device-list dropdown with \texttt{Scan Devices}, \texttt{Connect Device}, and \texttt{Disconnect} buttons. The real-time data panel displayed acceleration, motion acceleration, angular velocity, quaternion estimate, timestamp, and packet count. The recording panel included auto-recording status, \texttt{Start Recording}, \texttt{Stop Recording}, \texttt{Save Data (CSV)}, \texttt{Export to Excel}, and \texttt{Clear Data}. The lower-left area showed connection state and scan logs, while the right side showed live acceleration, angular-velocity, and motion-acceleration scatter plots with colour-coded axes. This interface verified BLE connection, packet decoding, and signal plausibility during bench testing and pilot preparation.
+The PC receiver front end is shown in Figure~\ref{fig:pc_receiver_frontend_outcome}. The left side contained a device-list dropdown with \texttt{Scan Devices}, \texttt{Connect Device}, and \texttt{Disconnect} buttons. The real-time data panel displayed acceleration, motion acceleration, angular velocity, quaternion estimate, timestamp, and packet count. The recording panel included auto-recording status, \texttt{Start Recording}, \texttt{Stop Recording}, \texttt{Save Data (CSV)}, \texttt{Export to Excel}, and \texttt{Clear Data}. The lower-left area showed connection state and scan logs, while the right side showed live acceleration, angular-velocity, and motion-acceleration scatter plots with colour-coded axes.
 
 \begin{figure}[H]
     \centering
@@ -60,27 +60,7 @@ The PC receiver front end is shown in Figure~\ref{fig:pc_receiver_frontend_outco
 
 \section{Objective 2: Pelvic Rotation Detection}\label{sec:results_detection}
 
-\subsection{Classifier Comparison}
-
-The retained classifier dataset consisted of 98 clean labelled segment files: 66 static-sitting segments and 32 pelvic-rotation segments. After 2~s windowing with a 1~s step, the participant-level window counts were distributed as shown in Table~\ref{tab:ch6_window_counts}. The held-out participant test set was imbalanced, with static sitting outnumbering pelvic rotation 21:1.
-
-\begin{table}[!htbp]
-    \centering
-    \footnotesize
-    \caption{Window counts per participant after 2~s windowing with a 1~s step.}
-    \label{tab:ch6_window_counts}
-    \begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}lrrr@{}}
-        \toprule
-        Participant & Static & Pelvic rot. & Total \\
-        \midrule
-        P1 & 2,425 & 102 & 2,527 \\
-        P2 & 2,641 &  70 & 2,711 \\
-        P3 & 1,912 & 106 & 2,018 \\
-        P4 & 2,014 & 121 & 2,135 \\
-        P5 & 3,497 & 165 & 3,662 \\
-        \bottomrule
-    \end{tabular*}
-\end{table}
+The retained classifier dataset consisted of 98 clean labelled segment files: 66 static-sitting segments and 32 pelvic-rotation segments. The held-out participant test set was imbalanced, with static sitting outnumbering pelvic rotation 21:1.
 
 Table~\ref{tab:ch6_model_results} reports the held-out performance of all five classifiers on participant 5. KNN achieved the highest pelvic-rotation F1-score at 0.957.
 
@@ -220,4 +200,4 @@ Table~\ref{tab:knn_timing} summarises per-window inference timing measured acros
     \end{tabularx}
 \end{table}
 
-The 2.73~ms total is below 0.15\% of the 2{,}000~ms window period. The deployed firmware uses 56.3~KB of flash and 9.3~KB of RAM, leaving headroom within the target's available flash and RAM budget for the Zephyr RTOS, BLE stack, and future extensions. These values describe compute and memory feasibility; power consumption and battery lifetime were not measured.
+The 2.73~ms total is below 0.15\% of the 2{,}000~ms window period. The deployed firmware uses 56.3~KB of flash and 9.3~KB of RAM, leaving headroom within the target's available flash and RAM budget for the Zephyr RTOS, BLE stack, and future extensions. These values describe compute and memory feasibility.

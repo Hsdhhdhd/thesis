@@ -8,8 +8,6 @@ The detection analysis uses XIAO data only and treats the target as the presence
 
 Five volunteers wore the prototype near the sacrum during an extended urban route that included walking from Group T in Leuven, train travel, a meal period, the return journey, and the walk back. The study was approved by the KU Leuven PRET committee under \texttt{G-2025-10284-R2(MIN)} (project ``Daily Monitoring of Pelvic Rotation Using Wearable IMUs''), dated 5 January 2026; all participants gave informed consent. No demographic or clinical variables were analysed in this thesis, so the pilot results cannot be stratified by age, sex, body composition, sitting habits, or history of low back pain.
 
-Participant identifiers P1--P5 in this chapter and in Chapter~\ref{ch:results} refer only to the five pilot-study participants. They should not be confused with protocol phases or previous pilot labels. The protocol was designed to collect labelled XIAO seated segments for the classifier dataset while also collecting paired Shimmer/XIAO field recordings from the same outing.
-
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.72\linewidth]{c6_equipment_overview_rotated.jpg}
@@ -44,13 +42,33 @@ During the train journeys, participants were instructed to alternate between sta
     \label{fig:train_environment}
 \end{figure}
 
-Rows outside an active label, non-seated route sections, and segments affected by visible battery-disconnection gaps were excluded from the classifier dataset. Participants 1--4 were used for training and internal model checks, and participant 5 was held out for the final test. The final segment and window counts are reported in Chapter~\ref{ch:results}.
+Rows outside an active label, route sections outside the train journeys, and segments affected by visible battery-disconnection gaps were excluded from the classifier dataset. Participants 1--4 were used for training and internal model checks, and participant 5 was held out for the final test.
 
 \subsection{Windowing and Feature Extraction}\label{sec:segmentation_features}
 
-For the offline classifier, labelled seated segments are loaded from the Android CSV exports and converted into window-level feature vectors. During loading, non-numeric samples are dropped, rows are sorted by epoch timestamp, and exact duplicate rows are removed.
+For the offline classifier, labelled seated segments are loaded from the Android CSV exports and converted into window-level feature vectors. During loading, non-numeric samples are dropped, and rows are sorted by epoch timestamp.
 
-Within each clean segment, raw IMU data are divided into sliding windows of 2~s with a 1~s step, retaining only windows with at least 50 samples. Each retained window inherits the label of its source segment. The IMU is configured at 208~Hz, but \(I^2C\) overhead and RTOS scheduling latency in the polling firmware reduce the effective read rate in clean field segments; this is handled by requiring a minimum sample count rather than assuming a fixed number of samples in every window.
+Within each clean segment, raw IMU data are divided into sliding windows of 2~s with a 1~s step.
+
+The participant-level window counts produced by this step are listed in Table~\ref{tab:ch6_window_counts}.
+
+\begin{table}[!htbp]
+    \centering
+    \footnotesize
+    \caption{Window counts per participant after 2~s windowing with a 1~s step.}
+    \label{tab:ch6_window_counts}
+    \begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}lrrr@{}}
+        \toprule
+        Participant & Static & Pelvic rot. & Total \\
+        \midrule
+        P1 & 2,425 & 102 & 2,527 \\
+        P2 & 2,641 &  70 & 2,711 \\
+        P3 & 1,912 & 106 & 2,018 \\
+        P4 & 2,014 & 121 & 2,135 \\
+        P5 & 3,497 & 165 & 3,662 \\
+        \bottomrule
+    \end{tabular*}
+\end{table}
 
 The three derived signals were acceleration magnitude \(\|\mathbf{a}\|\), gravity-removed acceleration magnitude \(|\|\mathbf{a}\|-9.80665|\), and gyroscope magnitude \(\|\boldsymbol{\omega}\|\). For each of the six raw channels and these three derived magnitude signals, ten time-domain statistics were computed: mean, standard deviation, minimum, maximum, range, root-mean-square, median, interquartile range, mean absolute first difference, and standard deviation of the first difference. This yields a 90-dimensional feature vector per window.
 
@@ -101,7 +119,7 @@ For the co-located comparison, the custom wearable and the Shimmer reference wer
 
 \subsection{Signal Alignment and Metrics}
 
-The co-located signals were resampled to a common time base and aligned by cross-correlation. Pearson correlation at zero lag describes waveform similarity without extra temporal correction. Maximum cross-correlation describes the strongest similarity after temporal alignment. The estimated lag is reported in seconds to indicate whether one data stream is shifted relative to the other. Normalised root-mean-square error (NRMSE) is normalised by the standard deviation of the Shimmer signal and is used as an amplitude-disagreement measure. The aim is trend-level comparison for movement detection, not clinical equivalence or anatomical angle validation.
+The co-located signals were resampled to a common time base and aligned by cross-correlation. Pearson correlation at zero lag describes waveform similarity without extra temporal correction. Maximum cross-correlation describes the strongest similarity after temporal alignment. The estimated lag is reported in seconds to indicate whether one data stream is shifted relative to the other. Normalised root-mean-square error (NRMSE) is normalised by the standard deviation of the Shimmer signal and is used as an amplitude-disagreement measure.
 
 \subsection{Field-Worn Paired-Recording Subset}\label{sec:pilot_detection}
 

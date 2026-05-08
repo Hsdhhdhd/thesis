@@ -187,11 +187,11 @@ Before the pilot tests, the Android backend was checked for BLE scanning, per-de
 
 The PC receiver backend is the researcher-side software for bench testing, debugging, and export. It is implemented in Python using \texttt{bleak} (\(\ge 0.20.0\)) for BLE communication and \texttt{openpyxl} (\(\ge 3.0.0\)) for Excel export. Like the Android backend, it connects to the wearable over BLE, subscribes to the notification characteristic listed in Table~\ref{tab:ble_identifiers}, and decodes the same 12-byte notification payload according to Table~\ref{tab:ble_payload_format}.
 
-Incoming notifications are parsed into converted acceleration and angular-velocity channels using the same receiver-side unit conversion as the Android backend. Additional derived channels, including gravity-removed motion acceleration and quaternion estimates, are computed in the receiver pipeline for later analysis.
+Additional derived channels, including gravity-removed motion acceleration and quaternion estimates, are computed in the receiver pipeline for later analysis.
 
 To keep acquisition independent of display refresh or file I/O timing, incoming packets are pushed onto a queue and written to CSV by a dedicated writer thread. The receiver can also export buffered data to an Excel file using \texttt{openpyxl}. The PC backend was mainly used to verify whether the prototype produced stable decoded streams before and after field sessions.
 
-The PC receiver writes its own CSV file with raw and derived signals (Table~\ref{tab:pc_csv_format}). Compared with the Android log it omits annotation and GPS fields but adds gravity-removed motion acceleration and quaternion estimates that were useful for offline bench checks.
+The PC receiver writes its own CSV file with raw and derived signals (Table~\ref{tab:pc_csv_format}). Compared with the Android log, it omits annotation and GPS fields but adds gravity-removed motion acceleration and quaternion estimates.
 
 \begin{table}[!htbp]
     \centering
@@ -210,7 +210,5 @@ The PC receiver writes its own CSV file with raw and derived signals (Table~\ref
         \bottomrule
     \end{tabularx}
 \end{table}
-
-Before the pilot tests, the PC receiver backend was used to confirm BLE connection, six-axis packet decoding, packet-to-file logging, and recording stability. These checks made it possible to test the wearable on the bench before using the Android backend for mobile field collection.
 
 \FloatBarrier
