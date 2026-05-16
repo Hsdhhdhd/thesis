@@ -1,0 +1,89 @@
+\chapter{Discussion}\label{ch:discussion}
+
+\section{Overall Technical Feasibility and Literature Comparison}
+
+Taken together, the results support a cautious technical-feasibility answer to the main research question. The work shows that a low-cost sacrum/lower-back wearable can be built as an integrated sensing-to-cue pipeline: it can stream IMU data, support labelled field logging, be checked against a research-grade IMU at trend level, distinguish instructed pelvic rotation from static sitting in pilot data, run a compact detector on the wearable, and trigger a local haptic cue. This supports feasibility of the pipeline, not clinical validity or proven behavioural benefit.
+
+Compared with posture-monitoring systems, the present work does not attempt full sitting-posture reconstruction or ergonomic posture scoring. Compared with prolonged-sitting monitors, it does not only count sitting duration or inactivity time; it adds a pelvic-region movement outcome that can reset local feedback logic. Compared with research-grade IMU studies, it uses a lower-cost wearable prototype and evaluates whether its signal trends are sufficiently comparable for the thesis detection task. Compared with reminder or intervention systems, the feedback is tied to the detector output rather than only to a fixed schedule.
+
+\begin{strip}
+    \centering
+    \scriptsize
+    \captionof{table}{Horizontal comparison between typical prior work and this thesis.}
+    \label{tab:discussion_literature_comparison}
+    \begin{tabularx}{\textwidth}{@{}p{0.18\textwidth}p{0.30\textwidth}p{0.27\textwidth}X@{}}
+        \toprule
+        Comparison dimension & Typical prior work & This thesis & Remaining gap \\
+        \midrule
+        Monitoring target & Sitting posture, posture transition, sedentary time, or breaks from sedentary time \cite{grant2006activpal_validation,obrien2022activpal_posture_review,lyden2012breaks_sedentary_monitors} & Static sitting versus instructed pelvic rotation as a pelvic-region movement outcome & Spontaneous daily-life pelvic movement remains unvalidated \\
+        System form & Research-grade monitors, smart seats, or external/mobile systems for posture and sedentary-behaviour measurement \cite{ishac2018lifechair,kalisch2022waist_thigh_sedentary,liao2026imu_pelvic_rotation} & Low-cost sacrum/lower-back wearable prototype with IMU sensing, logging, embedded detection, and local cue output & Long-term attachment comfort, enclosure robustness, and battery life remain untested \\
+        Processing and deployment & Many systems support offline analysis, external processing, or monitoring without fully local detector-to-cue execution \cite{chastin2010objective_sedentary,byrom2016objective_sedentary_accelerometers,figueira2024work_postural_feedback_review} & Compact 12-feature KNN and 128-prototype firmware implementation on the target wearable & Larger-scale embedded robustness and energy evaluation are still needed \\
+        Feedback role & Feedback or interventions often target posture correction, standing, or general sitting interruption \cite{gopalai2011vibrotactile_posture_system,gill2018sitfit_feedback_validation,stephenson2017technology_sedentary_meta} & Detection-outcome-based haptic cue triggered by lack of detected pelvic rotation & User perception, adherence, behavioural change, and health effects were not evaluated \\
+        \bottomrule
+    \end{tabularx}
+    \vspace{0.6em}
+\end{strip}
+
+The contribution is therefore best understood as system-level integration. Existing approaches often cover only one part of the chain: sensing, offline analysis, posture classification, sitting-duration monitoring, or feedback delivery. This thesis links these elements into one closed-loop research prototype. The remaining gap is that spontaneous daily-life pelvic movement, long-term robustness, attachment comfort, battery life, user response, and health effects were not established.
+
+\section{Prototype Feasibility and Engineering Trade-Offs}
+
+The prototype addresses Objective~1 by integrating the main technical components required for a pelvis-focused reminder platform: local IMU sensing, BLE streaming, labelled Android collection, PC inspection, compact embedded classification, and local haptic actuation. This positions the work between sedentary-behaviour interventions and wearable movement sensing. Interventions for prolonged sitting often focus on prompting or changing sitting patterns, while wearable sensing studies often focus on measurement and classification. This thesis contributes a technical component that links these directions, but it does not replace behavioural intervention studies that would be needed to test whether reminders change sitting behaviour.
+
+The practical value of the prototype is therefore the integration rather than the novelty of any single module. IMU sensing, BLE communication, mobile logging, classical classifiers, and vibrotactile cues are all established elements. The contribution here is that they were connected into one pelvis-focused sensing-to-cue pipeline and tested with pilot field recordings. The system should consequently be interpreted as a research prototype and feasibility study, not as a finished commercial wearable or a validated clinical tool.
+
+The body-worn design also represents a deliberate trade-off. Camera-based, furniture-based, or pressure-sensing approaches can provide richer posture reconstruction or seat-level contact information, but they are tied to a particular environment or seat. A sacrum/lower-back wearable sacrifices full-posture reconstruction and detailed pressure distribution in exchange for following the user across seats and public-transport contexts. That trade-off fits the aim of this thesis, which was to detect pelvic-region movement events and support a local reminder loop rather than reconstruct full sitting posture.
+
+The mechanical implementation remains a boundary of the feasibility claim. The prototype was adequate for supervised field data collection and short wearing sessions, but it should not be treated as a robust daily-wear device. The exposed electronics and sterile-dressing attachment were useful for inspection, adjustment, and debugging during pilot work, but they limit long-term wearing robustness. Intermittent contact or battery-related gaps observed during field collection also indicate that the next hardware iteration should prioritise mechanical fixation, enclosed electronics, strain relief, and power-connection reliability before unsupervised long-term use.
+
+The same design also involved a trade-off between compact, low-cost construction and engineering robustness. The small XIAO-based assembly and low component cost made the prototype suitable for supervised research testing, but attachment stability, battery contact, enclosure maturity, BLE stability, and debugging robustness remain open engineering issues for longer unsupervised deployment.
+
+\section{Reference Signal Comparability and Validity Boundary}
+
+The Shimmer comparison supports trend-level use of the XIAO data for this detection task, but it should not be interpreted as anatomical angle validation. In the co-located recording, the two sensors captured the same main movement peaks when they were moved together. In the usable field-worn subset, the two systems also showed comparable long-term acceleration-motion-magnitude and gyroscope-magnitude trends. However, the NRMSE values show that the two devices did not produce identical amplitudes. For the classifier developed in this thesis, this amplitude disagreement is less critical than event timing, because the detector was trained and evaluated entirely on XIAO data and used the Shimmer mainly as a trend-level reference.
+
+The sacrum/lower-back placement follows the same general logic as prior pelvis-focused IMU work: the sensor is placed near the lower trunk so that it can capture pelvic-region movement during sitting. The scope of this thesis is different, however. Prior work such as Liao et al. is closer to a benchmark and placement-comparison study, whereas this thesis adds a low-cost wearable prototype, mobile field logging, haptic output, and embedded deployment. The trade-off is that the present dataset is smaller and should be treated as preliminary pilot evidence rather than as a broad placement-validation dataset.
+
+The 1.2--1.3~s best lag observed in the field-worn paired recordings is more likely to reflect the logging chain, clocks, or timestamping process than a true sensor-response delay. This interpretation is supported by the co-located comparison, where the estimated lag was near zero when the two sensors were constrained to move together. In the field-worn recordings, the XIAO data passed through the Android BLE logging chain, while the Shimmer data used its own calibrated export and timestamping path. Small differences in clocks, packet reception timing, recording starts, or export alignment can therefore appear as a relative lag in the long-record trend comparison.
+
+The resulting validity claim should remain limited. The Shimmer results make it reasonable to use the XIAO prototype for the binary movement-detection task studied here, because the prototype captured comparable movement timing and trends in the tested recordings. They do not establish absolute calibration, strict synchronisation, anatomical pelvic-angle validity, or clinical pelvic kinematics. Stronger validation would require controlled placement, a larger paired dataset, tighter clock synchronisation, and an independent anatomical-angle measurement setup.
+
+\section{Detection, Deployment, and Haptic Feedback Boundaries}
+
+The offline classifier results show strong separability for the labelled pilot task, especially for the selected \(k=7\) KNN. This should be interpreted narrowly. The task was a binary distinction between \texttt{static\_sitting} and instructed \texttt{pelvic\_rotation}, not broad activity recognition, full sitting-posture classification, or clinical posture assessment. The high KNN F1-score therefore supports the claim that the collected XIAO feature space separated these two instructed classes under the tested protocol. It does not establish that all spontaneous seated movements, posture changes, or sitting behaviours can be detected.
+
+F1-score is more informative than accuracy in this evaluation because the held-out test set was highly imbalanced. Static-sitting windows substantially outnumbered pelvic-rotation windows, so a majority-class predictor could obtain a superficially high accuracy while failing at the actual detection task. The model comparison also shows different precision--recall trade-offs. The selected KNN provided the best balance, with high precision and high recall for pelvic rotation. The random forest achieved very high precision but lower recall, meaning that it produced few false pelvic-rotation detections but missed more true movement windows. LR and SVM achieved higher recall but much lower precision, meaning that they detected many movement windows while also producing more false positives. In a reminder system, these errors have different implications: a false positive could reset the inactivity timer when the user did not actually move, while a false negative could fail to reset the timer after a real pelvic movement.
+
+The main open question is generalisation to natural behaviour. Participants performed instructed anterior-posterior pelvic rotation during pilot train recordings, and the final independent evaluation used one held-out participant. Everyday seated movement is likely to be smaller, less periodic, and mixed with incidental shifts, phone use, vehicle motion, and other contextual movements. The current classifier therefore demonstrates technical detectability for a controlled pilot movement class in a small window-level dataset, not robust recognition of spontaneous daily-life sitting behaviour at session or user level. A stronger generalisation claim would require a larger spontaneous seated-behaviour dataset collected across office, home, and transport contexts, with more independent participant-level validation.
+
+The embedded result connects the movement-detection task to TinyML-style constraints. Wearable microcontrollers impose limits on memory, computation time, and energy, so offline classifier performance alone is not enough for a deployable reminder system. The firmware followed a conservative route: time-domain window features, KNN inference, and KMeans prototype compression. The full KNN representation was too large for the target flash budget, whereas the 12-feature compact KNN reduced the stored reference set to 128 prototypes and could run on the XIAO nRF54L15 Sense within the measured timing and memory limits. This supports the feasibility of simple nearest-neighbour decision logic under the target microcontroller constraints.
+
+The compact model should not be interpreted as strictly better than the full KNN baseline, even though its held-out F1-score was slightly higher. The compact and full models differ in both feature set and reference set, so their scores are not a controlled comparison of model quality alone. The more defensible interpretation is that the compact representation preserved the relevant decision behaviour while greatly reducing nearest-neighbour storage. The measured 2.73~ms per-window online decision time supports timing feasibility, but it does not establish battery-life feasibility because current draw and long-duration runtime were not measured.
+
+The haptic subsystem extends the prototype beyond sensing and logging by providing a local feedback channel that does not depend on phone notifications or PC processing. The DRV2605L and coin vibration motor demonstrate that the device can deliver a local tactile cue after the inactivity condition is met. However, this should be treated as a technical demonstration of cue delivery. The 10~min inactivity threshold and 1~s vibration duration are implementation choices used to close the loop in firmware, not validated behavioural parameters. User perception, comfort, acceptability, adherence, behaviour change, and health effects were not evaluated.
+
+The system should therefore be described as a sensing, classification, and cue-delivery platform. It can detect the instructed movement class in the pilot data, run the compact detector on the target wearable, and trigger a local reminder output. It cannot yet support claims that the cue reduces sedentary time, improves posture, changes health outcomes, or remains acceptable during repeated daily use. Those claims require a separate behavioural evaluation after the sensing and deployment pipeline has been made more robust.
+
+\clearpage
+\section{Limitations and Future Work}
+
+The main limitations and future work follow directly from the feasibility boundary and are organised by theme in Table~\ref{tab:discussion_limitations_future_work}.
+
+\begin{strip}
+    \centering
+    \scriptsize
+    \captionsetup{skip=2pt}
+    \captionof{table}{Limitations and recommended future work by theme.}
+    \label{tab:discussion_limitations_future_work}
+    \begin{tabularx}{\textwidth}{@{}p{0.18\textwidth}p{0.38\textwidth}X@{}}
+        \toprule
+        Theme & Limitation & Recommended future work \\
+        \midrule
+        Dataset and protocol & Small participant sample, instructed pelvic rotations, limited seated contexts, and limited demographic or clinical information & Collect larger datasets with diverse participants, office, study, home, and commuting contexts, and spontaneous seated movement \\
+        Model validation & Window-level evaluation, possible clean-segment selection bias, limited subject-independent validation, and no external dataset & Use independent validation data, stricter leave-one-subject-out reporting, prospective testing, and comparison with personalised calibration \\
+        Signal and reference validation & Limited usable Shimmer paired data, timestamping-chain differences, placement differences, and trend-level metrics only & Use hardware synchronisation or clear synchronisation events, more paired sessions, placement repeatability tests, and anatomical references if pelvic-angle estimation becomes a goal \\
+        Hardware and deployment & Battery contact, enclosure maturity, BLE reliability, attachment repeatability, comfort, waterproofing, and battery life were not fully evaluated & Improve enclosure and attachment, test long-duration wearing, quantify battery life, and assess data loss under daily-use conditions \\
+        Feedback and intervention & Haptic cue delivery was implemented, but perception and behavioural impact were not tested & Evaluate vibration detectability, comfort, acceptability, adherence, sitting-interruption behaviour, and possible discomfort outcomes \\
+        \bottomrule
+    \end{tabularx}
+\end{strip}

@@ -1,0 +1,423 @@
+\chapter{Methods}\label{ch:methods}
+
+\section{Prototype Design and System Implementation (Objective 1)}
+
+Objective~1 was addressed by developing a closed-loop sacrum-mounted wearable research prototype that supports the complete sensing-to-cue workflow required by this thesis. The prototype combines local IMU sensing, BLE data transmission, labelled field logging, researcher-side signal inspection, offline analysis and model construction, embedded decision logic, and local haptic cue delivery. Figure~\ref{fig:system_architecture} summarises this system architecture. The section focuses on what was built and why each component was included; the wearing setup used during field data collection is described later in Section~\ref{sec:pilot_field_protocol}.
+
+\begin{figure*}[t]
+    \centering
+    \resizebox{0.98\textwidth}{!}{%
+    \begin{tikzpicture}[
+        font=\footnotesize,
+        node distance=9mm and 11mm,
+        block/.style={
+            draw,
+            rounded corners=1mm,
+            align=center,
+            minimum height=10mm,
+            text width=24mm,
+            inner sep=3pt
+        },
+        arrow/.style={-{Latex[length=2mm]}, thick},
+        dashedarrow/.style={-{Latex[length=2mm]}, thick, dashed}
+    ]
+        % Data logging and model-construction path.
+        \node[block] (wearable) {Wearable\\prototype\\XIAO + IMU};
+        \node[block, right=of wearable] (ble) {BLE\\6-axis IMU\\stream};
+        \node[block, right=of ble] (android) {Android app\\field logging\\+ labels};
+        \node[block, right=of android] (csv) {CSV logs\\IMU + labels};
+        \node[block, right=of csv] (offline) {Offline\\features\\+ training};
+        \node[block, right=of offline] (export) {Compact KNN\\firmware\\export};
+
+        % Researcher-side inspection branch.
+        \node[block, below=14mm of ble] (pc) {PC receiver\\inspection\\+ export};
+
+        % Deployed on-device feedback path.
+        \node[block, below=30mm of export] (firmware) {On-device\\feature extraction\\+ KNN};
+        \node[block, left=of firmware] (timer) {Inactivity\\timer};
+        \node[block, left=of timer] (drv) {DRV2605L\\haptic driver};
+        \node[block, left=of drv] (motor) {Coin motor\\vibration cue};
+
+        \draw[arrow] (wearable) -- (ble);
+        \draw[arrow] (ble) -- (android);
+        \draw[arrow] (android) -- (csv);
+        \draw[arrow] (csv) -- (offline);
+        \draw[arrow] (offline) -- (export);
+        \draw[arrow] (ble.south) -- (pc.north);
+        \draw[arrow] (pc.east) -| (csv.south);
+        \draw[dashedarrow] (export.south) -- (firmware.north);
+        \draw[arrow] (firmware) -- (timer);
+        \draw[arrow] (timer) -- (drv);
+        \draw[arrow] (drv) -- (motor);
+    \end{tikzpicture}
+    }
+    \caption{System architecture of the closed-loop wearable research prototype. The XIAO-based wearable streams six-axis IMU data by BLE to the Android field logger or PC receiver. Logged data support offline feature extraction and model construction, after which the compact KNN is exported to firmware. On the device, the movement decision updates an inactivity timer that drives the DRV2605L haptic driver and coin vibration motor when the feedback condition is met.}
+    \label{fig:system_architecture}
+\end{figure*}
+
+\subsection{Wearable Hardware and Firmware}\label{sec:wearable_hardware_firmware}
+
+The hardware used in the prototype consists of a compact IMU-enabled microcontroller board, a haptic driver, a coin vibration motor, a battery, and a 3D-printed enclosure. The main components are listed in Table~\ref{tab:prototype_components}.
+
+\begin{table}[!htbp]
+    \centering
+    \footnotesize
+    \caption{Main hardware components.}
+    \label{tab:prototype_components}
+    \begin{tabularx}{\linewidth}{lX}
+        \toprule
+        Component & Role \\
+        \midrule
+        XIAO nRF54L15 Sense & Microcontroller + embedded IMU + BLE radio \\
+        LSM6DS3TR-C IMU & Three-axis acceleration and angular velocity sensing \\
+        DRV2605L & Haptic driver for the vibration motor \\
+        Coin vibration motor & Local tactile reminder to the wearer \\
+        500~mAh battery & Internal power source \\
+        3D-printed enclosure & Carrier and housing \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+The Seeed Studio XIAO nRF54L15 Sense was used as the central hardware platform. It was selected because it integrates the microcontroller, the LSM6DS3TR-C IMU, and the BLE radio on a single compact board. This reduces wiring, board area, and component count compared with a separate microcontroller and sensor module. The LSM6DS3TR-C IMU provides three-axis acceleration and three-axis angular velocity, which are sufficient for the binary movement-detection task studied in this thesis.
+
+The DRV2605L was used as the haptic driver between the microcontroller and the vibration motor. It provides the actuator interface controlled by the XIAO firmware. The vibration actuator was an 8~mm by 3~mm coin vibration motor. This motor was selected because it is small and can provide a local tactile cue. Its rated voltage is 3--5~V, and its rated current is 67~mA. The 500~mAh battery provided an internal power source. The 3D-printed perforated carrier plate and orange enclosure provided the housing. The XIAO nRF54L15 Sense and the DRV2605L were mounted on the black carrier plate and fixed with hot-melt glue. The battery is housed inside the enclosure, which measures \(5.4 \times 3.0 \times 1.5~\mathrm{cm}\). The wearable prototype component cost was below EUR 30 (XIAO board $\approx$EUR 15, DRV2605L module and motor below EUR 10, battery and printed enclosure together $\approx$EUR 5).
+
+The hardware uses two wired interfaces in addition to the on-board IMU and BLE radio. First, the XIAO and the DRV2605L are connected through power and an \(I^2C\) bus. The XIAO ground (GND) and 3V3 supply pins are connected to the DRV2605L GND and VIN pins. XIAO pin D4 serves as the serial data line (SDA), and XIAO pin D5 serves as the serial clock line (SCL). Second, the vibration motor is connected to the positive and negative motor output terminals of the DRV2605L. The connections are summarised in Table~\ref{tab:electrical_connections}. The wiring was intentionally kept minimal: the IMU and BLE radio are already integrated on the XIAO board, so the external circuit only adds the haptic driver, motor, and battery.
+
+\begin{table}[!htbp]
+    \centering
+    \footnotesize
+    \caption{Electrical connections.}
+    \label{tab:electrical_connections}
+    \begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}lll@{}}
+        \toprule
+        XIAO pin & DRV2605L pin & Function \\
+        \midrule
+        GND & GND & Common ground \\
+        3V3 & VIN & Driver power supply \\
+        D4 & SDA & \(I^2C\) data \\
+        D5 & SCL & \(I^2C\) clock \\
+        No direct XIAO pin & OUT+ / OUT- & Motor output \\
+        \bottomrule
+    \end{tabular*}
+\end{table}
+
+The firmware sampled the IMU at 208~Hz. Each sample contained six raw motion channels: three-axis acceleration \((a_x, a_y, a_z)\) and three-axis angular velocity \((g_x, g_y, g_z)\). In the firmware, acceleration is read in \si{\meter\per\second\squared} and angular velocity in radians per second from the Zephyr sensor API before being encoded for BLE transmission.
+
+The device exposes the IMU stream through BLE notifications. The BLE settings used by the receiver backends are listed in Table~\ref{tab:ble_identifiers}. The advertised name allows the Android and PC software to identify the wearable, the service UUID identifies the custom BLE service, and the notification UUID identifies the characteristic that emits the IMU packets.
+
+\begin{table}[!htbp]
+    \centering
+    \scriptsize
+    \caption{BLE advertising name and subscription identifiers.}
+    \label{tab:ble_identifiers}
+    \begin{tabularx}{\linewidth}{@{}l>{\raggedright\arraybackslash}X@{}}
+        \toprule
+        Item & Value \\
+        \midrule
+        Advertised name & \path{ble-imu-sensor} \\
+        Service UUID & \path{12345678-1234-5678-1234-56789abcdef0} \\
+        Notification UUID & \path{12345678-1234-5678-1234-56789abcdef1} \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+Each BLE notification carries a compact 12-byte payload, decoded as six little-endian signed 16-bit integers for three-axis acceleration and angular velocity (Table~\ref{tab:ble_payload_format}). The payload contains only the six motion values and leaves timestamping to the receiving software during logging. Acceleration is encoded in \(10^{-3}\,\si{\meter\per\second\squared}\) units, and angular velocity is encoded in milliradians per second.
+
+\begin{table}[!htbp]
+    \centering
+    \footnotesize
+    \caption{BLE notification payload format.}
+    \label{tab:ble_payload_format}
+    \begin{tabularx}{\linewidth}{llX}
+        \toprule
+        Bytes & Field & Description \\
+        \midrule
+        0--1   & \texttt{accel\_x} & Raw acceleration $X$ \\
+        2--3   & \texttt{accel\_y} & Raw acceleration $Y$ \\
+        4--5   & \texttt{accel\_z} & Raw acceleration $Z$ \\
+        6--7   & \texttt{gyro\_x}  & Raw angular velocity $X$ \\
+        8--9   & \texttt{gyro\_y}  & Raw angular velocity $Y$ \\
+        10--11 & \texttt{gyro\_z}  & Raw angular velocity $Z$ \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\subsection{Data Logging and Inspection Tools}\label{sec:data_logging_inspection_tools}
+
+Two receiver-side software tools were developed around the same BLE IMU stream. The Android application was used when labelled data had to be collected in everyday seated contexts, whereas the PC receiver was used in indoor settings when the researcher needed real-time visualisation of the same stream for direct monitoring, inspection, debugging, and export. Both tools subscribed to the BLE notification characteristic described in Table~\ref{tab:ble_identifiers} and decoded the 12-byte payload described in Table~\ref{tab:ble_payload_format}. Their roles are summarised in Table~\ref{tab:logging_inspection_tools}.
+
+\begin{strip}
+    \centering
+    \small
+    \captionof{table}{Data logging and inspection tools.}
+    \label{tab:logging_inspection_tools}
+    \begin{tabularx}{\textwidth}{@{}p{0.13\textwidth}p{0.24\textwidth}p{0.31\textwidth}X@{}}
+        \toprule
+        Tool & Primary role & Key outputs & Why needed \\
+        \midrule
+        Android app & Field data collection and annotation & Timestamped labelled CSV: device ID, IMU values, optional GPS, active label, and segment ID & Labelled pilot data collection in everyday seated contexts \\
+        PC receiver & Indoor visual monitoring, debugging, inspection, and export & Live plots, CSV/Excel export, motion acceleration, and quaternion outputs & Direct visual monitoring of the IMU stream and decoding checks before field sessions \\
+        \bottomrule
+    \end{tabularx}
+    \vspace{0.6em}
+\end{strip}
+
+The Android backend was implemented as a native application; its application identifier and build configuration are reported in Appendix~\ref{app:android_build_config}. Its role was to scan for the wearable, connect to it through BLE, subscribe to the IMU notification characteristic, decode the 12-byte motion packets, and save the converted IMU values to CSV files. The application used a low-latency BLE scan and identified the target wearable through either the advertised device name \path{ble-imu-sensor} or the custom IMU service UUID.
+
+The Android backend can maintain two wearable connections simultaneously, which was required for multi-device field sessions. During recording, the backend writes one CSV row per received packet in the phone's external documents directory. The file name is generated from the recording start time, for example \path{imu_data_YYYYMMDD_HHMMSS.csv}. A foreground service keeps BLE and Global Positioning System (GPS) collection active when the screen is locked or the application is in the background. GPS samples are obtained from Android's fused location provider; each IMU row is stamped with \texttt{gps\_age\_ms}, the time difference between the IMU packet timestamp and the most recent GPS fix.
+
+The backend stores annotation state separately for each connected wearable. When the researcher starts an annotation, the selected label is assigned to that device together with a segment identifier and a start timestamp. The current label is then written into every CSV row received from that device until the annotation is stopped. This start/stop design is important for the field protocol because the labels are not inferred automatically by the phone; they are entered during the session and later used to select clean labelled segments for windowing and classifier evaluation. Rows outside an active annotation can be kept in the raw log for completeness but excluded from the labelled analysis dataset.
+
+To keep the CSV description readable, the logged fields are grouped in Table~\ref{tab:receiver_csv_groups}. The Android log stores device identity, receiver-side timestamps, the six converted IMU channels, GPS metadata when available, and annotation fields. The PC receiver log omits GPS and annotation fields but adds derived motion and orientation-related channels for inspection.
+
+\begin{strip}
+    \begin{minipage}{\textwidth}
+        \centering
+        \small
+        \captionof{table}{Concise CSV field groups from the receiver tools.}
+        \label{tab:receiver_csv_groups}
+        \begin{tabularx}{\textwidth}{@{}p{0.18\textwidth}p{0.39\textwidth}X@{}}
+            \toprule
+            Field group & Android app & PC receiver \\
+            \midrule
+            Device and time & \texttt{device\_label}, \texttt{timestamp}, \texttt{epoch\_ms} & \texttt{timestamp} \\
+            IMU values & \texttt{accel\_\{x,y,z\}}, \texttt{gyro\_\{x,y,z\}} & \texttt{accel\_\{x,y,z\}}, \texttt{gyro\_\{x,y,z\}} \\
+            GPS metadata & \texttt{gps\_lat}, \texttt{gps\_lon}, \texttt{gps\_accuracy\_m}, \texttt{gps\_age\_ms} & Not recorded \\
+            Annotation & \texttt{annotation\_label}, \texttt{annotation\_segment\_id}, annotation start time & Not recorded \\
+            Derived signals & Not recorded & \texttt{accel\_motion\_\{x,y,z\}}, \texttt{quat\_\{w,x,y,z\}} \\
+            \bottomrule
+        \end{tabularx}
+        \vspace{0.6em}
+    \end{minipage}
+\end{strip}
+
+The PC receiver backend was implemented in Python using \texttt{bleak} for BLE communication and \texttt{openpyxl} for Excel export. Like the Android backend, it connects to the wearable over BLE, subscribes to the notification characteristic, and decodes the same 12-byte notification payload as six little-endian signed 16-bit values. The raw acceleration values are converted to \(\si{\meter\per\second\squared}\), and the angular velocity values are converted from milliradians per second to degrees per second before storage or inspection.
+
+For indoor pre-session checking, the PC backend computed inspection channels for acceleration, angular velocity, gravity-removed motion acceleration, and quaternion estimates. These derived outputs were used to monitor whether the incoming IMU stream was plausible, stable, and correctly decoded, rather than as separate ground truth. To keep acquisition independent of display refresh or file I/O timing, incoming packets are pushed onto a queue and written to CSV by a dedicated writer thread. The receiver can also export buffered data to an Excel file. In this workflow, the PC receiver complements the Android logger by providing a controlled backend tool for pre-session verification, allowing the researcher to check before formal field recording that the BLE stream is stable and that the hardware IMU is not faulty.
+
+\section{Reference IMU Comparison (Objective 2)}
+
+Objective~2 was addressed by comparing the prototype IMU signals with a research-grade Shimmer IMU. The purpose of this comparison was to examine whether the low-cost XIAO-based prototype captured movement trends that were broadly comparable to the reference sensor during seated movement recordings. The comparison was therefore treated as a technical signal-comparability assessment rather than anatomical pelvic-angle validation, clinical pelvic kinematics validation, or absolute sensor calibration.
+
+Two complementary recording conditions were considered. First, a co-located setup was used in which the XIAO prototype and the Shimmer were mounted together so that both sensors received the same movement input and placement differences were minimised. Second, a limited field-worn paired subset was extracted from recordings in which both systems were worn during the broader field protocol. Signal alignment and descriptive metrics were then used to quantify waveform similarity, lag-corrected similarity, relative timing offset, and amplitude disagreement. The interpretation of these comparisons was kept at the level of trend-level comparability, not strict synchronisation or anatomical validity.
+
+\subsection{Co-Located Shimmer/XIAO Comparison}\label{sec:colocated_shimmer_xiao}
+
+For the co-located comparison, the XIAO-based prototype was placed on top of the Shimmer IMU, and the two devices were secured together using adhesive tape so that both sensors received the same imposed movement input (Figure~\ref{fig:colocated_shimmer_xiao_setup}). This stacked setup was used to minimise placement differences between the two devices and to provide a controlled signal-comparability check before interpreting field-worn paired recordings. The purpose was to assess waveform and trend similarity under shared movement input, not to validate anatomical pelvic angles or clinical pelvic kinematics.
+
+\begin{figure}[!htbp]
+    \centering
+    \begin{tikzpicture}[
+        device/.style={draw, rounded corners=2pt, minimum width=2.8cm, minimum height=0.8cm, align=center, font=\small},
+        tape/.style={draw, fill=gray!12, minimum width=3.4cm, minimum height=2.4cm},
+        arrow/.style={-{Latex[length=2.2mm]}, thick}
+    ]
+        \node[tape] (tape) {};
+        \node[device, fill=white] (shimmer) at (0,-0.45) {Shimmer\\IMU};
+        \node[device, fill=white] (xiao) at (0,0.55) {XIAO\\prototype};
+        \node[font=\scriptsize, below=0.28cm of tape] {Adhesive tape fixing both IMUs together};
+        \node[font=\scriptsize, align=center, right=0.25cm of tape] {XIAO placed\\above Shimmer};
+        \node[font=\scriptsize, above=0.18cm of tape] {shared imposed movement input};
+    \end{tikzpicture}
+    \captionsetup{skip=2pt}
+    \caption{Co-located Shimmer/XIAO setup in which the XIAO prototype was placed on top of the Shimmer IMU and secured with adhesive tape.}
+    \label{fig:colocated_shimmer_xiao_setup}
+\end{figure}
+
+The analysed co-located recording used the second available paired dataset from this setup: the XIAO log \path{imu_data_20260317_142128.csv} and the corresponding Shimmer database \path{1773731170.db}. The retained aligned segment lasted approximately \(34.8~\si{\second}\). During this recording, the stacked sensor pair included a short static period and manually imposed dynamic motions, including rotations, to generate time-varying acceleration and angular-velocity patterns. These motions were chosen to check whether the two sensors responded similarly across both relatively stable and dynamic signal portions.
+
+The XIAO log provided three-axis acceleration and three-axis angular velocity from the prototype receiver, while the Shimmer database provided calibrated accelerometer and gyroscope channels from the reference IMU. The two data streams were later aligned and resampled to a common time base as described in Section~\ref{sec:signal_alignment_metrics}. Because this co-located setup constrained the sensors to move together, differences observed in the comparison were interpreted as sensor, timing, processing, or residual axis-alignment differences rather than as differences in body placement.
+
+\subsection{Field-Worn Paired Recording Subset and Preprocessing}\label{sec:field_worn_paired_subset}
+
+The field-worn paired subset was extracted from the broader pilot field protocol described later in Section~\ref{sec:pilot_field_protocol}. This subsection only defines the subset used for Objective~2; the full wearing setup, route context, and labelled sitting protocol are described under Objective~3 to avoid duplicating the same field scenario. Paired Shimmer/XIAO reference recordings were planned for five participants, but only two participants produced usable overlapping XIAO and Shimmer recordings for the field-worn reference comparison. The paired Shimmer recordings for P3--P5 were not usable and were therefore excluded from Objective~2. When the XIAO log itself contained clean labelled seated segments, those segments could still be retained for Objective~3, because the pelvic-rotation detector was trained and evaluated on XIAO data rather than on paired Shimmer data.
+
+\begin{center}
+    \scriptsize
+    \captionof{table}{Usable field-worn paired recordings retained for the Objective~2 reference comparison.}
+    \label{tab:field_worn_paired_subset}
+    \begin{tabularx}{\linewidth}{@{}lrrr@{}}
+        \toprule
+        Part. & XIAO rows & Shimmer rows & Overlap \\
+        \midrule
+        P1 & 3.53M & 2.20M & 365.0 min \\
+        P2 & 3.20M & 2.21M & 367.2 min \\
+        \bottomrule
+    \end{tabularx}
+\end{center}
+
+For each usable participant, the overlapping time interval between the Android-timestamped XIAO log and the Shimmer calibrated export was extracted using epoch timestamps. The field-worn signals were then resampled to a common \(10~\si{\hertz}\) time base for long-trend comparison. Long timestamp gaps in the XIAO logs were handled as discontinuities and were not filled by interpolation, so recording dropouts were not converted into artificial smooth movement. This was particularly important because the XIAO data were received through the Android BLE logging chain.
+
+Because the two sensors were worn on the body rather than rigidly co-located, the field-worn comparison did not use direct axis-by-axis agreement as the primary signal. Instead, two orientation-reduced magnitude signals were computed: acceleration motion magnitude,
+\begin{equation}
+    a_m(t) = \left|\lVert \mathbf{a}(t) \rVert - g\right|,
+\end{equation}
+and gyroscope magnitude,
+\begin{equation}
+    \omega_m(t) = \lVert \boldsymbol{\omega}(t) \rVert .
+\end{equation}
+These magnitude signals reduce sensitivity to small sensor-orientation and placement differences between the XIAO prototype and the Shimmer during body-worn recording.
+
+\subsection{Signal Alignment, Metrics, and Statistical Handling}\label{sec:signal_alignment_metrics}
+
+The Shimmer/XIAO comparisons used alignment and descriptive metrics to assess signal comparability. For the co-located comparison, the Shimmer and XIAO six-axis signals were resampled to a common \(100~\si{\hertz}\) time grid and trimmed to the shared aligned interval. The relative lag was estimated from the acceleration magnitude by searching for the temporal shift that maximised cross-correlation; the calculation is detailed in Appendix~\ref{app:lag_estimation}. After this lag correction, the same aligned interval was used for the three acceleration channels and three gyroscope channels.
+
+For the field-worn comparison, the overlapping interval was first extracted using epoch timestamps from the Android XIAO log and the Shimmer calibrated export, as described in Section~\ref{sec:field_worn_paired_subset}. The long field-worn trends were resampled to \(10~\si{\hertz}\). Long gaps were treated as discontinuities and were not interpolated. Because the sensors were worn on the body and could differ slightly in orientation and placement, the field-worn analysis used acceleration motion magnitude and gyroscope magnitude rather than direct axis-by-axis agreement.
+
+Four descriptive metrics were reported. Pearson correlation at zero lag quantified waveform similarity without additional temporal correction. Maximum cross-correlation quantified the strongest similarity after allowing a temporal shift between the two streams. The estimated lag, reported in seconds, described the relative timing offset between the XIAO and Shimmer signals. Normalised root-mean-square error (NRMSE) quantified amplitude disagreement relative to the variability of the Shimmer reference signal:
+\begin{equation}
+    \mathrm{NRMSE} =
+    \frac{\sqrt{\frac{1}{N}\sum_{i=1}^{N}(x_i-s_i)^2}}{\sigma_s},
+\end{equation}
+where \(x_i\) is the XIAO signal, \(s_i\) is the Shimmer signal, and \(\sigma_s\) is the standard deviation of the Shimmer signal over the compared interval.
+
+No inferential statistical comparison was performed. The paired dataset was too small for a defensible formal comparison between co-located and field-worn performance, and the purpose of Objective~2 was technical signal checking rather than population-level inference. A formal inferential comparison would require a predefined statistical test, a clear sample unit, and an adequate minimum sample size. Therefore, this thesis reports descriptive trend-level metrics only. These metrics support trend-level comparability between the XIAO prototype and the Shimmer reference, but they do not establish absolute calibration, strict synchronisation, anatomical pelvic-angle validity, or clinical pelvic kinematics validity.
+
+\section{Pilot Field Study, Pelvic Rotation Detection, and On-Device Feedback Evaluation (Objective 3)}
+
+Objective~3 evaluated whether static sitting and instructed pelvic rotation could be distinguished in pilot seated contexts, and whether the resulting detection logic could be simplified for on-device, outcome-based haptic feedback. This section therefore combines the pilot field study, offline pelvic-rotation detection, compact KNN deployment, and firmware-level feedback evaluation. The field protocol first provided labelled XIAO IMU segments from seated contexts; these segments were then windowed, converted into motion features, and used to train and evaluate binary classifiers. The selected model was simplified into a compact KNN representation for embedded implementation, and the final firmware was assessed in terms of runtime, memory use, inactivity-timer operation, and vibration-trigger output.
+
+The scope of this evaluation is technical feasibility. The labels were researcher-controlled, and the target task was binary separation between static sitting and instructed pelvic rotation, not full posture assessment, spontaneous daily-life activity recognition, or clinical pelvic-kinematics validation. The haptic cue was evaluated as a detection-outcome-based firmware output, not as evidence of behavioural change, long-term adherence, or health benefit.
+
+\subsection{Pilot Field Protocol and Wearing Setup}\label{sec:pilot_field_protocol}
+
+The pilot field study was conducted under KU Leuven Privacy and Ethics platform (PRET) approval number G-2025-10284-R2(MIN), for the project titled \emph{Daily Monitoring of Pelvic Rotation Using Wearable IMUs}. The approval was issued on 5 January 2026 after GDPR review and favourable review by the Social and Societal Ethics Committee (SMEC). Five volunteers participated in the pilot data collection and provided informed consent before recording. The participants are referred to as P1--P5; no demographic or clinical variables were analysed in this thesis.
+
+The field protocol focused on seated data collection in dynamic public-transport settings. The broader route included train and bus recordings, but the main Objective~3 classifier dataset was restricted to the train-seated recordings because these sessions provided complete and usable labelled seated data for all five participants. Seated recordings from non-dynamic contexts were excluded from the main classifier dataset. Bus recordings were organised and analysed separately as supplementary bus-specific episodes because vehicle vibration and recording reliability made them less suitable as the main classifier evidence. The handling and supplementary train-person/test-person bus analysis are documented in Appendix~\ref{app:bus_recording_handling}.
+
+The XIAO-based prototype was attached near the sacrum/lower-back region, close to the pelvis, using the carrier plate and adhesive fixation (Figure~\ref{fig:pilot_field_setup}). This placement was used because the target movement was seated pelvic/lower-trunk movement rather than whole-body activity, and because the vibration cue was intended to be delivered locally at the wearable site. The field sessions also included a Shimmer reference sensor, but those paired Shimmer/XIAO recordings are not repeated here because the usable paired subset has already been defined for Objective~2 in Section~\ref{sec:field_worn_paired_subset}.
+
+\begin{figure*}[!t]
+    \centering
+    \begin{minipage}[t]{0.31\textwidth}
+        \centering
+        \includegraphics[width=\linewidth,height=0.17\textheight,keepaspectratio]{field_equipment_overview.jpg}\\
+        \scriptsize (a) Equipment before field recording
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.31\textwidth}
+        \centering
+        \includegraphics[width=\linewidth,height=0.17\textheight,keepaspectratio]{field_wearing_setup.jpg}\\
+        \scriptsize (b) Sacrum/lower-back attachment
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.31\textwidth}
+        \centering
+        \includegraphics[width=\linewidth,height=0.17\textheight,keepaspectratio]{field_train_environment_anon.jpg}\\
+        \scriptsize (c) Anonymised train-seated environment
+    \end{minipage}
+    \caption{Pilot field setup used for Objective~3: equipment prepared before the route, sacrum/lower-back attachment of the wearable prototype, and the anonymised train-seated recording environment.}
+    \label{fig:pilot_field_setup}
+\end{figure*}
+
+During the retained train-seated protocol, participants remained seated and were instructed to perform two labelled states: static sitting and intentional anterior-posterior pelvic rotation. Static sitting referred to seated periods without instructed pelvic movement, while pelvic rotation referred to deliberate seated rocking of the pelvis in the anterior-posterior direction. The researcher controlled the start and stop of each label using the Android logger described in Section~\ref{sec:data_logging_inspection_tools}. During an active annotation, the selected label and segment identifier were written to each received XIAO IMU row.
+
+The retained Objective~3 dataset was therefore a clean labelled XIAO dataset extracted from the broader field recordings. Rows or segments were excluded if they were unlabelled, unclear, outside seated route sections, from non-dynamic seated contexts, affected by battery or contact disconnection, missing the BLE stream, or otherwise inconsistent with the instructed sitting protocol. The resulting clean labelled segments were passed to the windowing and feature-extraction procedure described in Section~\ref{sec:windowing_feature_extraction}.
+
+\begin{center}
+    \small
+    \captionof{table}{Pilot field data-use boundary for Objective~3.}
+    \label{tab:objective3_data_use_boundary}
+    \begin{tabularx}{\linewidth}{@{}p{0.20\linewidth}p{0.26\linewidth}X@{}}
+        \toprule
+        Recording context & Main handling & Reason \\
+        \midrule
+        Train seated recordings & Retained for the main classifier dataset & Complete labelled seated data were available for all five participants in a dynamic transport setting \\
+        Bus seated recordings & Appendix context only & Two participants had intermittent device contact or power loss, and strong bus vibration limited reliable long static-sitting collection \\
+        Other seated contexts & Excluded from the main classifier dataset & The Objective~3 dataset was scoped to dynamic field transport conditions rather than controlled or non-transport sitting \\
+        \bottomrule
+    \end{tabularx}
+\end{center}
+
+\subsection{Windowing and Feature Extraction}\label{sec:windowing_feature_extraction}
+
+The clean labelled XIAO CSV segments retained from Section~\ref{sec:pilot_field_protocol} were converted into fixed-length windows for offline classifier development. Each segment file carried one label, inferred from the file name as either \texttt{static\_sitting} or \texttt{pelvic\_rotation}. Because each retained file represented a single labelled segment, window labels were assigned at the segment level, and windows crossing label boundaries were not generated. Any remaining part of a segment shorter than one full window was discarded.
+
+For each segment, the processing script loaded the receiver-side timestamp \texttt{epoch\_ms} and the six converted IMU channels: \texttt{accel\_\{x,y,z\}} and \texttt{gyro\_\{x,y,z\}}. These columns were converted to numeric values; rows with non-numeric or missing values in the required columns were removed. The remaining rows were sorted by \texttt{epoch\_ms}, and duplicate rows were removed. This preserved the time sequence inside each clean labelled segment while removing samples that could not be used for numerical feature extraction.
+
+Offline evaluation used \(2~\si{\second}\) windows with a \(1~\si{\second}\) step. A window was retained only if it contained at least 50 samples. This threshold removed windows that were too sparse after cleaning or timestamp irregularities. The embedded firmware used the same \(2~\si{\second}\) decision window length, but not the same \(1~\si{\second}\) offline overlap. In firmware, the purpose was periodic real-time decision making under timing and memory constraints, whereas the offline overlap was used to increase the number of labelled training and evaluation windows available from the pilot dataset.
+
+Three derived magnitude signals were computed from the six raw IMU channels. Acceleration magnitude was calculated as \(\lVert \mathbf{a} \rVert\), gyroscope magnitude as \(\lVert \boldsymbol{\omega} \rVert\), and gravity-removed acceleration magnitude as \(\left|\lVert \mathbf{a} \rVert - g\right|\), with \(g=9.80665~\si{\meter\per\second\squared}\). Together with the six raw IMU channels, these produced nine signal streams per window.
+
+For the full offline feature set, ten time-domain features were calculated for each of the nine signal streams: mean, standard deviation, minimum, maximum, range, root-mean-square (RMS), median, interquartile range (IQR), mean absolute first difference, and standard deviation of the first difference. This produced \(9 \times 10 = 90\) features per window. The same feature table also retained metadata fields for participant, source file, window index, start and end time, sample count, and label.
+
+\begin{center}
+    \small
+    \captionof{table}{Labelled \(2~\si{\second}\) windows retained for Objective~3.}
+    \label{tab:objective3_window_counts}
+    \begin{tabularx}{\linewidth}{@{}lrrr@{}}
+        \toprule
+        Participant & Static sitting & Pelvic rotation & Total \\
+        \midrule
+        P1 & 2425 & 102 & 2527 \\
+        P2 & 2641 & 70 & 2711 \\
+        P3 & 1912 & 106 & 2018 \\
+        P4 & 2014 & 121 & 2135 \\
+        P5 & 3497 & 165 & 3662 \\
+        \midrule
+        Total & 12489 & 564 & 13053 \\
+        \bottomrule
+    \end{tabularx}
+\end{center}
+
+The compact embedded model described later in Section~\ref{sec:compact_knn_construction} used a reduced 12-feature subset rather than the full 90-feature table. This reduced set was selected as an engineering simplification for deployment and is listed with the compact-model construction in Table~\ref{tab:objective3_compact_features}.
+
+\subsection{Offline Pelvic Rotation Detection Evaluation}\label{sec:offline_pelvic_rotation_detection}
+
+The offline detection task was defined as a binary window-level classification problem between \texttt{static\_sitting} and \texttt{pelvic\_rotation}. The positive class was \texttt{pelvic\_rotation}, because this was the movement event that would reset the inactivity timer in the later feedback logic. This evaluation did not attempt full activity recognition, posture-quality assessment, spontaneous daily-life movement detection, clinical movement analysis, or anatomical pelvic-angle estimation.
+
+Five classical machine-learning classifiers were compared using the same 90-feature window table described in Section~\ref{sec:windowing_feature_extraction}: logistic regression (LR), support vector machine with radial-basis-function kernel (SVM), decision tree (DT), random forest (RF), and k-nearest neighbours (KNN). These models were selected as transparent baseline classifiers for a small pilot dataset and for compatibility with the later embedded simplification step. The model comparison was therefore used to assess technical detectability in the collected feature space, not to claim novelty in machine-learning model design.
+
+A person-independent split was used. Windows from participants P1--P4 were used for training and internal model checks, while participant P5 was held out for final testing. No P5 windows were used for feature scaling, feature selection, hyperparameter setting, KNN configuration, or model fitting. For LR, SVM, and KNN, standardisation was implemented inside the scikit-learn pipeline so that the scaler was fitted only on the P1--P4 training windows before being applied to P5. The formal KNN candidate set was \(k \in \{3,5,7\}\). Within this candidate set, leave-one-participant-out checks on P1--P4 gave the highest mean pelvic-rotation F1-score for \(k=7\). The selected KNN was then fitted on all P1--P4 training windows and evaluated once on P5.
+
+\begin{table}[!htbp]
+    \centering
+    \scriptsize
+    \captionsetup{skip=2pt}
+    \caption{Classifier reproducibility settings for the offline pelvic-rotation detection evaluation.}
+    \label{tab:objective3_classifier_settings}
+    \begin{tabularx}{\linewidth}{@{}p{0.14\linewidth}p{0.22\linewidth}X@{}}
+        \toprule
+        Model & Preprocessing & Key settings \\
+        \midrule
+        LR & Standardised input & Logistic regression with L2 penalty, \(C=1.0\), class weight set to balanced, maximum iterations 3000, and random state 42 \\
+        SVM & Standardised input & RBF-kernel support vector machine with \(C=1.0\), \(\gamma=\) scale, class weight set to balanced, probability output enabled, and random state 42 \\
+        DT & None & Decision tree with Gini criterion, no fixed maximum depth, minimum samples per leaf 5, class weight set to balanced, and random state 42 \\
+        RF & None & Random forest with 500 trees, Gini criterion, no fixed maximum depth, minimum samples per leaf 2, class weight set to balanced subsample, random state 42, and all available processor cores used \\
+        KNN & Standardised input & Euclidean distance and distance-weighted voting; deployable candidate set \(k \in \{3,5,7\}\); \(k=7\) retained after P1--P4 internal checks and fixed before held-out P5 evaluation \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+Classification performance was summarised using accuracy, balanced accuracy, precision, recall, F1-score, and a confusion matrix. Accuracy was retained for completeness, but balanced accuracy and the pelvic-rotation precision, recall, and F1-score were more informative because the window table was dominated by static-sitting windows. Precision described how often predicted pelvic-rotation windows were correct, while recall described how many true pelvic-rotation windows were detected. These metrics were computed on the held-out P5 windows only and are reported in Chapter~4.
+
+\subsection{Compact KNN Construction for Embedded Deployment}\label{sec:compact_knn_construction}
+
+A direct full-KNN firmware representation was not suitable for the target wearable because KNN stores reference examples. The full offline KNN used the 90-feature window table and the P1--P4 training windows as its reference set, so a direct firmware representation would have to store the full reference matrix together with feature-scaling values, class labels, firmware code, and operating-system overhead. The deployable firmware therefore used two reductions: a 12-feature subset and KMeans prototype compression. The corresponding full-KNN build feasibility check is reported with the embedded results in Chapter~\ref{ch:results}.
+
+The compact feature subset is shown in Table~\ref{tab:objective3_compact_features}. It is dominated by gyroscope energy, gyroscope range, gyroscope-magnitude, vertical-acceleration, and acceleration-motion-magnitude features. This selection matched the expected signal difference between static sitting and instructed pelvic rotation: static sitting should produce low angular-velocity variation, whereas deliberate pelvic movement should increase short-window angular-velocity magnitude, range, and motion-related acceleration variation.
+
+\begin{center}
+    \small
+    \captionof{table}{Compact embedded KNN feature subset.}
+    \label{tab:objective3_compact_features}
+    \begin{tabularx}{\linewidth}{@{}p{0.28\linewidth}X@{}}
+        \toprule
+        Feature group & Features \\
+        \midrule
+        Gyroscope \(x\)-axis & \texttt{gyro\_x\_rms}, \texttt{gyro\_x\_std}, \texttt{gyro\_x\_range} \\
+        Gyroscope magnitude & \texttt{gyro\_mag\_std}, \texttt{gyro\_mag\_max}, \texttt{gyro\_mag\_rms}, \texttt{gyro\_mag\_range}, \texttt{gyro\_mag\_mean} \\
+        Vertical acceleration & \texttt{accel\_z\_max}, \texttt{accel\_z\_range}, \texttt{accel\_z\_std} \\
+        Acceleration motion magnitude & \texttt{acc\_motion\_mag\_std} \\
+        \bottomrule
+    \end{tabularx}
+\end{center}
+
+For compact-model construction, the selected features were standardised using the means and standard deviations fitted on the P1--P4 training windows only. KMeans clustering was then applied separately within each labelled class in the standardised feature space. The firmware model used 64 cluster centres for \texttt{static\_sitting} and 64 cluster centres for \texttt{pelvic\_rotation}, giving 128 stored prototypes in total. The KMeans configuration used a fixed random state of 42 and 10 initialisations. The resulting firmware header stored the feature order, scaling values, prototype coordinates, class labels, and KNN constants \(\texttt{KNN\_FEATURE\_COUNT}=12\), \(\texttt{KNN\_REFERENCE\_COUNT}=128\), and \(\texttt{KNN\_K}=7\). During on-device inference, the 12-feature window vector is standardised, Euclidean distances to the 128 prototypes are computed, the seven nearest prototypes are retained, and the final class is assigned by inverse-distance-weighted voting. P5 was not used to fit the scaler, generate prototypes, or choose the compact KNN settings. Before firmware export, the compact KNN was evaluated offline on the same held-out P5 windows as the full offline models, so the compact and full-KNN results used the same person-independent test boundary.
+
+\subsection{Firmware Timing, Memory, and Haptic Trigger Evaluation}
+
+After the compact KNN had been evaluated offline on the same held-out participant used for the classifier evaluation, the generated model header was integrated into the XIAO nRF54L15 Sense firmware. The deployed firmware requested a 208~Hz IMU sampling frequency and polled the sensor every 5~ms. Incoming samples were accumulated into non-overlapping 2~s windows. For each valid window, the firmware computed the 12 compact features listed in Table~\ref{tab:objective3_compact_features}, standardised them using the stored training-set scaling values, and classified the window with the compact distance-weighted KNN. A detected \texttt{pelvic\_rotation} window reset the inactivity timer. If the firmware continued to classify windows as static sitting and no pelvic rotation was detected for 10~min, the DRV2605L haptic driver was commanded to play the selected vibration effect and the coin motor was driven for 1~s. A minimum sample threshold was retained so that short or incomplete windows were skipped rather than classified.
+
+Firmware timing was measured on the XIAO using the Zephyr hardware cycle counter. The firmware recorded two per-window timing values: KNN inference time, measured around the nearest-prototype distance computation and weighted vote, and total online decision time, measured around compact feature extraction plus KNN inference. The timing log used 24 consecutive non-overlapping 2~s windows from the deployed firmware output. Firmware memory use was taken from the PlatformIO/Zephyr build output for the same target board and firmware configuration. These measurements were used only to assess embedded compute and memory feasibility of the sensing-to-cue loop. They did not measure current draw, power consumption, battery lifetime, long-term reliability, user perception of the vibration cue, adherence, or behavioural effectiveness of the reminder.

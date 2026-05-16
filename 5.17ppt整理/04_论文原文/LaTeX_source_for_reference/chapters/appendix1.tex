@@ -1,0 +1,178 @@
+\chapter{Supplementary Material}\label{app:supplementary}
+
+\section{BLE Acceleration Encoding Range}\label{app:ble_acceleration_range}
+
+The BLE payload described in Section~\ref{sec:wearable_hardware_firmware} stores each motion channel as a
+signed 16-bit integer. Since one byte contains 8 bits, two bytes contain
+16 bits and can therefore store one signed 16-bit value. The representable
+integer range is
+\begin{equation}
+    -2^{15} \leq n \leq 2^{15}-1,
+\end{equation}
+which corresponds to
+\begin{equation}
+    -32768 \leq n \leq 32767.
+\end{equation}
+
+For the accelerometer channels, the encoded unit is
+\(10^{-3}~\si{\meter\per\second\squared}\) per integer count. The physical
+acceleration represented by an encoded integer value \(n_a\) is therefore
+\begin{equation}
+    a = n_a \times 10^{-3}~\si{\meter\per\second\squared}.
+\end{equation}
+The maximum positive acceleration that can be represented by this format is
+\begin{equation}
+    a_{\max} = 32767 \times 10^{-3}
+    = 32.767~\si{\meter\per\second\squared}.
+\end{equation}
+The minimum negative acceleration is
+\begin{equation}
+    a_{\min} = -32768 \times 10^{-3}
+    = -32.768~\si{\meter\per\second\squared}.
+\end{equation}
+
+Expressed relative to gravitational acceleration, using
+\(g \approx 9.81~\si{\meter\per\second\squared}\), this range is approximately
+\begin{equation}
+    \frac{32.767}{9.81} \approx 3.34~g.
+\end{equation}
+Thus, the acceleration channels in the 12-byte BLE payload can represent a
+physical acceleration range of approximately
+\(-32.768\) to \(+32.767~\si{\meter\per\second\squared}\), equivalent to about
+\(-3.34~g\) to \(+3.34~g\). Accelerations outside this range cannot be
+represented by this payload format without clipping or a different numerical
+encoding.
+
+\section{Android Application Identifier and Build Configuration}\label{app:android_build_config}
+
+The Android logger described in Section~\ref{sec:data_logging_inspection_tools}
+was implemented as a native Android application. The application identifier and
+build settings used for the evaluated version are listed in
+Table~\ref{tab:android_build_config}. These values document which Android
+application build was used during the receiver-side logging implementation.
+
+\begin{table}[!htbp]
+    \centering
+    \small
+    \caption{Android logger application identifier and build configuration.}
+    \label{tab:android_build_config}
+    \begin{tabularx}{\linewidth}{@{}p{0.28\linewidth}X@{}}
+        \toprule
+        Item & Value or meaning \\
+        \midrule
+        Package name & \path{com.l1172.bleimuandroid}, the Android application identifier used by the operating system and build tools \\
+        \texttt{versionName} & \texttt{1.0.1}, the human-readable application version \\
+        \texttt{versionCode} & \texttt{2}, the internal Android version number used for update ordering \\
+        Compile SDK & 34, the Android SDK version used to compile the application \\
+        Target SDK & 34, the Android platform behaviour level targeted by the application \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\section{Lag Estimation from Acceleration Magnitude}\label{app:lag_estimation}
+
+The Shimmer/XIAO alignment in Section~\ref{sec:signal_alignment_metrics}
+estimated the relative timing offset between the two streams using acceleration
+magnitude. For each sensor, the three acceleration channels were first combined
+into a single magnitude signal:
+\begin{equation}
+    \lVert \mathbf{a}(t) \rVert =
+    \sqrt{a_x(t)^2 + a_y(t)^2 + a_z(t)^2}.
+\end{equation}
+This converts the three-axis acceleration into one time series for the Shimmer
+and one time series for the XIAO.
+
+The two magnitude signals were then compared over a set of candidate temporal
+shifts. For each candidate shift \(\tau\), one signal was shifted relative to
+the other and the correlation over the overlapping samples was calculated:
+\begin{equation}
+    r(\tau) =
+    \mathrm{corr}\left(a_{\mathrm{Shimmer}}(t),
+    a_{\mathrm{XIAO}}(t+\tau)\right).
+\end{equation}
+The estimated lag was the shift that produced the highest correlation:
+\begin{equation}
+    \tau^\ast = \arg\max_{\tau} r(\tau).
+\end{equation}
+
+In practical terms, this procedure slides one acceleration-magnitude curve
+forwards and backwards in time and selects the offset at which the Shimmer and
+XIAO curves are most similar. The resulting lag was then used to trim the two
+signals to a shared aligned interval before the channel-level comparison
+metrics were calculated.
+
+\section{Bus Recording Handling}\label{app:bus_recording_handling}
+
+Bus recordings were attempted as an additional dynamic public-transport
+context during the broader pilot field study. They were not used as the main
+Objective~3 classifier dataset because the bus sessions were less controlled
+than the retained train recordings. Vehicle vibration, intermittent contact,
+and power or stream interruptions made the bus data less suitable as the main
+evidence for classifier development. Therefore, the main Objective~3 classifier
+dataset was limited to clean labelled train-seated segments.
+
+Explicitly labelled bus seated episodes were nevertheless organised as a
+supplementary bus-specific dataset. The files were grouped into
+\path{no_pelvic_rotation} and \path{with_pelvic_rotation} classes. Only episodes
+with explicit labels were used; other rows that might have corresponded to
+static sitting were not inferred retrospectively because the label boundary
+was uncertain under strong vehicle motion.
+
+A supplementary train-person/test-person analysis was performed using the
+script \path{train_chuyan_meixin_test_ruyang.py}. The model was trained on the
+Chuyan and Meixin bus source files and tested on the held-out Ruyang bus source
+files. This split was used only as an exploratory bus-context check and was not
+used for model selection in the main train-seated Objective~3 analysis. The
+split is summarised in Table~\ref{tab:bus_supplementary_split}.
+
+\begin{table}[!htbp]
+    \centering
+    \footnotesize
+    \caption{Supplementary bus train/test split.}
+    \label{tab:bus_supplementary_split}
+    \begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}llrr@{}}
+        \toprule
+        Split & Class & Sources & Windows \\
+        \midrule
+        Train & No pelvic rotation & 6 & 253 \\
+        Train & With pelvic rotation & 11 & 96 \\
+        Test & No pelvic rotation & 3 & 1396 \\
+        Test & With pelvic rotation & 4 & 37 \\
+        \bottomrule
+    \end{tabular*}
+\end{table}
+
+The bus analysis used 2~s windows with a 1~s step and 86 features computed from
+the six IMU channels, acceleration and gyroscope magnitudes, simple spectral
+features, and inter-axis correlations. Five classical classifiers were tested:
+logistic regression (LR), support vector machine (SVM), decision tree (DT),
+random forest (RF), and k-nearest neighbours (KNN). The positive class was
+\path{with_pelvic_rotation}. The held-out Ruyang window-level results are
+reported in Table~\ref{tab:bus_supplementary_results}.
+
+\begin{table}[!htbp]
+    \centering
+    \scriptsize
+    \caption{Supplementary bus held-out Ruyang window-level results.}
+    \label{tab:bus_supplementary_results}
+    \begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}lrrrrrrr@{}}
+        \toprule
+        Model & Acc. & Bal. acc. & Prec. & Rec. & Spec. & F1 & FP \\
+        \midrule
+        LR  & 0.378 & 0.681 & 0.040 & 1.000 & 0.361 & 0.077 & 892 \\
+        SVM & 0.044 & 0.509 & 0.026 & 1.000 & 0.019 & 0.051 & 1370 \\
+        DT  & 0.666 & 0.828 & 0.072 & 1.000 & 0.657 & 0.134 & 479 \\
+        RF  & 0.453 & 0.719 & 0.045 & 1.000 & 0.438 & 0.086 & 784 \\
+        KNN & 0.435 & 0.710 & 0.044 & 1.000 & 0.420 & 0.084 & 809 \\
+        \bottomrule
+    \end{tabular*}
+\end{table}
+
+All five classifiers detected the 37 held-out pelvic-rotation windows, but the
+precision was very low because many no-pelvic-rotation bus windows were
+classified as pelvic rotation. The decision tree gave the highest balanced
+accuracy among the tested models, but it still produced 479 false-positive
+windows. These supplementary results support the decision to keep the bus
+recordings outside the main Objective~3 classifier dataset: bus vibration and
+context-specific motion can strongly confound pelvic-rotation detection and may
+incorrectly reset the inactivity timer in a feedback system.
