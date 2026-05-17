@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>5.16 Canvas PPT | Thesis Defense</title>
+  <style>
+    :root { color-scheme: dark; --text:#f6fbff; --muted:#a7b8d4; --blue:#4fb7ff; --cyan:#45e0ce; --gold:#ffd166; --red:#ff6b7a; }
+    * { box-sizing: border-box; }
+    body {
+      margin:0; min-height:100vh; overflow:hidden; color:var(--text);
+      font-family: Inter, "Segoe UI", "Noto Sans SC", "Microsoft YaHei", Arial, sans-serif;
+      display:grid; grid-template-columns: 1fr 320px; grid-template-rows: 1fr auto;
+      background: radial-gradient(circle at 12% 8%, rgba(79,183,255,.25), transparent 28%), radial-gradient(circle at 88% 24%, rgba(69,224,206,.20), transparent 32%), linear-gradient(135deg,#06101f,#101d36 58%,#06101f);
+    }
+    main { display:grid; place-items:center; padding:26px; min-width:0; }
+    .stage { width:min(100%, calc((100vh - 118px) * 16 / 9)); aspect-ratio:16/9; border-radius:22px; overflow:hidden; background:#071326; box-shadow:0 26px 80px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.14); }
+    canvas { width:100%; height:100%; display:block; }
+    aside { grid-row:1 / span 2; display:flex; flex-direction:column; background:rgba(3,10,20,.78); border-left:1px solid rgba(255,255,255,.12); backdrop-filter: blur(16px); min-width:0; }
+    .side-head { padding:18px 18px 12px; border-bottom:1px solid rgba(255,255,255,.1); }
+    .side-head h1 { margin:0 0 8px; font-size:17px; line-height:1.25; }
+    .side-head p { margin:0; color:var(--muted); font-size:12px; line-height:1.55; }
+    .thumbs { padding:13px; overflow:auto; display:grid; gap:10px; }
+    .thumb { border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.055); color:var(--text); border-radius:14px; cursor:pointer; padding:10px; display:grid; grid-template-columns:48px 1fr; gap:10px; text-align:left; align-items:start; }
+    .thumb[aria-current="true"] { border-color:rgba(79,183,255,.85); background:rgba(79,183,255,.18); }
+    .no { color:var(--cyan); font-weight:850; font-size:18px; }
+    .tt { font-size:12px; line-height:1.35; }
+    footer { grid-column:1; display:flex; justify-content:space-between; gap:12px; align-items:center; padding:11px 28px 22px; color:var(--muted); font-size:13px; }
+    .controls { display:flex; gap:10px; flex-wrap:wrap; }
+    button.control { border:1px solid rgba(255,255,255,.15); color:var(--text); background:rgba(255,255,255,.08); border-radius:999px; padding:9px 13px; cursor:pointer; font-weight:700; }
+    button.control:hover { background:rgba(255,255,255,.15); }
+    #notes { max-width:58vw; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    @media (max-width: 980px) { body { grid-template-columns:1fr; grid-template-rows:1fr auto auto; overflow:auto; } aside{grid-row:auto; max-height:245px; border-left:0; border-top:1px solid rgba(255,255,255,.12);} .thumbs{grid-auto-flow:column; grid-auto-columns:225px; overflow-x:auto;} footer{grid-column:1; flex-direction:column; align-items:flex-start;} #notes{max-width:100%; white-space:normal;} }
+  </style>
+</head>
+<body>
+  <main><div class="stage"><canvas id="deck" width="1600" height="900" aria-label="5.16 thesis defense canvas slides"></canvas></div></main>
+  <aside>
+    <div class="side-head">
+      <h1>5.16 答辩大纲 Canvas PPT</h1>
+      <p>内容来自 <b>5.16答辩大纲</b> 的大纲、讲稿和论文图片素材。←/→ 翻页，F 全屏，E 导出 PNG。</p>
+    </div>
+    <div class="thumbs" id="thumbs"></div>
+  </aside>
+  <footer>
+    <div class="controls">
+      <button class="control" id="prev">← 上一页</button>
+      <button class="control" id="next">下一页 →</button>
+      <button class="control" id="fullscreen">全屏</button>
+      <button class="control" id="export">导出当前页 PNG</button>
+    </div>
+    <div id="notes"></div>
+  </footer>
+<script>
+const W=1600,H=900, ctx=document.getElementById('deck').getContext('2d');
+const canvas=document.getElementById('deck');
+const P={bg:'#07111f', card:'rgba(255,255,255,.075)', card2:'rgba(255,255,255,.12)', text:'#f6fbff', muted:'#a7b8d4', blue:'#4fb7ff', cyan:'#45e0ce', gold:'#ffd166', red:'#ff6b7a', green:'#8ef2a7'};
+const A='../../5.12论文重写/images/';
+const G='../../5.17ppt整理/02_图片素材/生成图片_image2_可选/';
+let current=0;
+const imgs={};
+function img(src){ if(!src) return null; if(!imgs[src]){ const im=new Image(); im.onload=render; im.onerror=()=>{ im._failed=true; render(); }; im.src=src; imgs[src]=im; } return imgs[src]; }
+
+const slides=[
+ {part:'Title', title:'AI-Enabled Wearable Device for\nPelvic Motion Monitoring', sub:'and Haptic Intervention During Prolonged Sitting', bullets:['Ruyang Luo / Yonggui Yuan','Supervisor: Prof. Bart Vanrumste','Co-supervisors: Prof. Jean-Marie Aerts, Meixing Liao','Technical feasibility of a low-cost sacrum/lower-back sensing-to-cue pipeline'], images:[A+'c3_device_external.png'], note:'开场强调 technical feasibility，不说 clinical device。', layout:'title'},
+ {part:'Background', title:'Prolonged Sitting and Sedentary Behaviour', bullets:['Sedentary behaviour: waking behaviour ≤ 1.5 METs while sitting, reclining, or lying','Prolonged sitting: uninterrupted or insufficiently interrupted seated time','Risk is not described by total sedentary time alone'], diagram:'hierarchy', note:'先解释 prolonged sitting 是 sedentary behaviour 的具体子集。'},
+ {part:'Motivation', title:'Total Sitting Duration Is Not Enough', bullets:['Duration: how long the seated bout lasts','Interruptions: when sitting is broken','Movement within bout: whether pelvic/lower-trunk movement occurs','Same duration can hide very different movement patterns'], diagram:'timeline', note:'说明本论文关注 seated bout 内部是否发生骨盆区域运动。'},
+ {part:'Related Work', title:'Monitoring Technologies', bullets:['Camera systems: rich posture information, but line-of-sight and privacy constraints','Smart chairs/cushions: stable seat reference, but tied to one seat','Research-grade IMUs: high-quality logging, often post-hoc and higher cost','Microcontroller IMU wearable: low-cost local sensing + local cue, but needs validation'], diagram:'techgrid', note:'不要贴密集表格，用技术方向总结 gap。'},
+ {part:'Scope', title:'Research Gap and Scope Boundary', bullets:['Need a low-cost pelvis-focused wearable that can sense, log, detect and cue locally','This is not a clinical pelvic-angle validation','This is not proof of long-term comfort, battery life, health benefit or behavioural effectiveness','Contribution: integrated technical evaluation of a sensing-to-cue pipeline'], diagram:'boundary', note:'主动划边界，避免夸大。'},
+ {part:'Objectives', title:'Research Question, Objectives, and Contributions', bullets:['Can a low-cost sacrum/lower-back wearable support closed-loop pelvic-region movement monitoring during prolonged sitting?','Objective 1: implement wearable hardware, firmware, Android logger and PC receiver','Objective 2: compare XIAO/Shimmer signal trends','Objective 3: evaluate instructed pelvic-rotation detection and embedded compact KNN'], diagram:'objectives', note:'这是全篇地图。'},
+ {part:'Methods', title:'Closed-Loop Sensing-to-Cue Architecture', bullets:['XIAO + IMU → BLE six-axis stream','Android labelled logging / PC inspection → CSV logs','Offline features + model construction → compact KNN firmware export','On-device decision → inactivity timer → DRV2605L + coin vibration cue'], images:[G+'image2_closed_loop_pipeline_no_text.png'], diagram:'pipeline', note:'强调 pipeline，不只是模型。'},
+ {part:'Objective 1', title:'Hardware and Firmware Components', bullets:['XIAO nRF54L15 Sense: MCU + IMU + BLE','LSM6DS3TR-C: acceleration and angular velocity','DRV2605L + coin vibration motor: local tactile reminder','500 mAh battery and 3D-printed enclosure'], images:[A+'c3_device_external.png', A+'c3_device_internal.png'], note:'展示外部和内部硬件。', layout:'photos'},
+ {part:'Objective 1', title:'Data Logging and Inspection Tools', bullets:['Android logger: BLE discovery, per-device label control, live telemetry, row-level CSV labels','PC receiver: stream inspection, live plots, recording checks and export','These tools make clean labelled XIAO segments possible'], images:[A+'c4_mobile_discovery.jpg',A+'c4_mobile_label_controls.jpg',A+'c4_mobile_live_telemetry_clean.jpg',A+'c4_pc_receiver_gui.png'], note:'说明移动采集和研究人员检查工具各自作用。', layout:'quad'},
+ {part:'Objective 2', title:'Shimmer/XIAO Signal Comparability', bullets:['Co-located setup: XIAO prototype fixed on top of Shimmer','Field-worn paired subset: planned for five participants; usable paired recordings P1 and P2','Interpretation: descriptive trend-level comparability only'], images:[A+'shimmer_xiao_comparison.png'], diagram:'comparison', note:'不是绝对校准，也不是临床骨盆运动学验证。'},
+ {part:'Objective 3', title:'Pilot Field Protocol and Data-Use Boundary', bullets:['5 volunteers with informed consent','Wearable attached near sacrum/lower-back region','Dynamic public-transport seated context','Only labelled XIAO sitting/rotation windows were retained for classifier evaluation'], images:[A+'field_equipment_overview.jpg',A+'field_wearing_setup.jpg',A+'field_train_environment_anon.jpg'], note:'讲清楚 field protocol 和 data-use boundary。', layout:'triptych'},
+ {part:'Objective 3', title:'Windowing, Classifier Evaluation, and Compact KNN', bullets:['2 s IMU windows with feature extraction','Binary task: static sitting vs instructed pelvic rotation','Person-independent final split: P1–P4 train, P5 held-out test','Compact KNN: 12 features + KMeans prototypes for firmware deployment'], diagram:'mlflow', note:'强调严格评估，不随机窗口混洗。'},
+ {part:'Result 1', title:'Prototype Implementation Outcome', bullets:['Integrated wearable prototype with BLE streaming and local haptic hardware','Android app supports discovery, live telemetry and label controls','PC receiver supports researcher-side signal inspection','Firmware supports later compact decision logic and cue execution'], images:[A+'c3_device_external.png',A+'c4_mobile_live_telemetry_clean.jpg',A+'c4_pc_receiver_gui.png'], note:'把硬件和软件成果合在一起展示。', layout:'triptych'},
+ {part:'Result 2', title:'Co-Located Shimmer/XIAO Agreement', bullets:['Pearson correlations across acceleration and gyroscope axes: 0.816–0.923','Estimated lag: -0.020 to 0 s','Supports trend-level agreement under shared imposed movement input'], chart:'range', values:[['Pearson r',.816,.923],['Lag mapped',.98,1.00]], images:[A+'shimmer_xiao_comparison.png'], note:'把结果说成 trend-level agreement。'},
+ {part:'Result 3', title:'Field-Worn Trend Agreement', bullets:['Usable field-worn paired recordings were available for P1 and P2','Lag-corrected maximum cross-correlations reached 0.915–0.981','Field evidence is preliminary and descriptive'], images:[A+'c5_field_trend_comparison.png'], chart:'range2', values:[['Max x-corr',.915,.981]], note:'说明 paired field subset 很小。'},
+ {part:'Result 4', title:'Retained Classifier Dataset', bullets:['Classifier dataset retained labelled XIAO windows relevant to the binary task','Classes: static sitting and instructed pelvic rotation','Evaluation avoids using non-overlapping or unusable bus/field segments outside this boundary','Final held-out participant: P5'], diagram:'dataset', note:'用这一页防止评委问为什么不用所有采集数据。'},
+ {part:'Result 5', title:'Held-Out P5 Classification Performance', bullets:['Five model families compared: Logistic Regression, SVM, Decision Tree, Random Forest and KNN','KNN family performed best for the held-out person-independent task','Training-side selection over k ∈ {3,5,7}; selected k=7','Held-out P5 pelvic-rotation F1 = 0.957 for full KNN'], chart:'models', values:[['LR',.74],['SVM',.86],['DT',.88],['RF',.93],['KNN',.957]], note:'说明 k=7 是训练侧选择。'},
+ {part:'Result 6', title:'Confusion Matrix for Selected KNN', bullets:['Pelvic rotation windows: 155 / 165 correctly detected','Static sitting windows: only 4 / 3,497 false positives','This is important because false movement detections would reset the reminder timer'], images:[A+'ch6_person5_confusion_matrix_selected_knn.png'], chart:'confusion', note:'高召回且低误报。'},
+ {part:'Result 7', title:'Compact Embedded KNN and Memory Feasibility', bullets:['Full KNN: 90 features + 9,391 reference windows','Compact KNN: 12 features + 128 KMeans prototypes','Compact model achieved P5 F1 = 0.959','Compression preserved task performance while making firmware deployment practical'], images:[A+'ch6_full_vs_compact_knn_comparison.png'], note:'解释为什么需要压缩：片上资源。'},
+ {part:'Result 8', title:'Firmware Timing, Memory, and Haptic Cue', bullets:['Feature extraction + compact KNN: 2.73 ms per 2 s window','CPU occupancy < 0.15%','Firmware footprint: 56.3 KB Flash, 9.3 KB RAM','10 min without detected pelvic rotation → 1 s vibration cue'], diagram:'firmware', note:'证明不是只在电脑上能跑，片上也可行。'},
+ {part:'Discussion', title:'What the Thesis Supports — and Does Not Establish', bullets:['Supports: integrated low-cost sensing-to-cue research prototype','Supports: trend-level XIAO/Shimmer comparability','Supports: instructed pelvic-rotation detection in pilot data and compact embedded deployment','Does not establish: clinical kinematics, spontaneous daily-use robustness, battery/comfort, behavioural effectiveness'], diagram:'support', note:'讨论页要主动且诚实。'},
+ {part:'Conclusion', title:'Limitations, Future Work, and Conclusion', bullets:['Main limitation: small pilot dataset and instructed target movement','Future work: larger sample, long-term naturalistic recordings, personalization, haptic strategy user study','Conclusion: technical feasibility of a low-cost closed-loop sacrum/lower-back wearable pipeline was demonstrated'], images:[G+'image2_seated_lower_back_wearable_no_text.png'], diagram:'final', note:'结束时回到 technical feasibility。'},
+ {part:'Backup', title:'Backup 1: Research Question and Objective Mapping', bullets:['RQ: closed-loop pelvic-region movement monitoring during prolonged sitting','O1: hardware/software implementation','O2: Shimmer/XIAO trend comparability','O3: classifier and compact embedded KNN feasibility'], diagram:'objectives', backup:true, note:'备用：完整目标映射。'},
+ {part:'Backup', title:'Backup 2: Data Inclusion and Bus Recording Boundary', bullets:['Not every collected segment enters classifier evaluation','Only usable labelled XIAO static-sitting and pelvic-rotation windows are retained','Public-transport context provides realistic collection conditions but also introduces data-quality boundaries'], diagram:'dataset', backup:true, note:'备用：解释数据纳入边界。'},
+ {part:'Backup', title:'Backup 3: Shimmer/XIAO Validity Boundary and Lag', bullets:['Co-located comparison supports shared-input trend consistency','Field-worn comparison is limited to usable paired recordings from P1/P2','Lag handling is descriptive alignment, not strict hardware synchronization'], chart:'range', values:[['Co-located r',.816,.923],['Field x-corr',.915,.981]], backup:true, note:'备用：传感器验证边界。'},
+ {part:'Backup', title:'Backup 4: KNN Selection and Evaluation Strictness', bullets:['Hyperparameter k was selected only within training participants','P5 remained held out for final testing','Person-independent evaluation is stricter than random window-level splitting'], diagram:'mlflow', backup:true, note:'备用：防止数据泄漏质疑。'},
+ {part:'Backup', title:'Backup 5: Full KNN vs Compact KNN Memory Calculation', bullets:['Full KNN stores many high-dimensional reference windows','Compact KNN stores low-dimensional features and KMeans prototypes','Practical result: deployable memory footprint with similar held-out F1'], images:[A+'ch6_full_vs_compact_knn_comparison.png'], backup:true, note:'备用：模型压缩解释。'},
+ {part:'Backup', title:'Backup 6: Haptic Cue, Ethics, and User-Study Boundary', bullets:['Haptic cue execution is implemented locally with DRV2605L and coin motor','Ethics approval and informed consent support pilot data collection','The thesis does not test long-term user adherence or behavioural change'], diagram:'firmware', backup:true, note:'备用：伦理和干预边界。'}
+];
+
+function bg(part){
+ const g=ctx.createLinearGradient(0,0,W,H); g.addColorStop(0,'#07111f'); g.addColorStop(.55,'#102342'); g.addColorStop(1,'#06101f'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+ glow(155,100,310,P.blue,.17); glow(1320,150,320,P.cyan,.13); glow(1220,800,300,P.gold,.07);
+ ctx.strokeStyle='rgba(255,255,255,.045)'; ctx.lineWidth=1; for(let x=0;x<W;x+=80) ln(x,0,x,H); for(let y=0;y<H;y+=80) ln(0,y,W,y);
+ ctx.fillStyle='rgba(255,255,255,.72)'; ctx.font='700 23px Inter, sans-serif'; ctx.fillText('5.16 Thesis Defense Canvas PPT',70,58);
+ ctx.textAlign='right'; ctx.fillStyle=P.muted; ctx.fillText(part||'',W-70,58); ctx.textAlign='left';
+}
+function glow(x,y,r,c,a){ const grd=ctx.createRadialGradient(x,y,0,x,y,r); grd.addColorStop(0,rgba(c,a)); grd.addColorStop(1,'rgba(0,0,0,0)'); ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); }
+function rgba(hex,a){ const v=parseInt(hex.slice(1),16); return `rgba(${(v>>16)&255},${(v>>8)&255},${v&255},${a})`; }
+function ln(x1,y1,x2,y2){ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}
+function rr(x,y,w,h,r,fill,stroke='rgba(255,255,255,.15)'){ctx.beginPath();ctx.roundRect(x,y,w,h,r); if(fill){ctx.fillStyle=fill;ctx.fill();} if(stroke){ctx.strokeStyle=stroke;ctx.stroke();}}
+function wrap(t,x,y,w,size=31,color=P.text,weight=750,lh=1.28){ctx.font=`${weight} ${size}px Inter, Noto Sans SC, Microsoft YaHei, sans-serif`;ctx.fillStyle=color;let yy=y;for(const para of String(t).split('\n')){let line='';for(const word of para.split(/(\s+)/)){const test=line+word;if(ctx.measureText(test).width>w && line.trim()){ctx.fillText(line.trim(),x,yy);line=word;yy+=size*lh;}else line=test;}if(line.trim())ctx.fillText(line.trim(),x,yy);yy+=size*lh;}return yy;}
+function bullets(arr,x,y,w,size=28){let yy=y; arr.forEach((b,i)=>{ctx.fillStyle=[P.blue,P.cyan,P.gold,P.green][i%4];ctx.beginPath();ctx.arc(x+13,yy-10,7,0,Math.PI*2);ctx.fill(); yy=wrap(b,x+38,yy,w-38,size,P.text,650,1.34)+7;}); return yy;}
+function title(s){bg(s.part); rr(70,105,1460,690,34,'rgba(255,255,255,.075)'); ctx.fillStyle=P.cyan;ctx.font='850 30px Inter';ctx.fillText('Master Thesis Defense · KU Leuven · 2025–2026',120,172);wrap(s.title,120,290,920,65,P.text,900,1.12);wrap(s.sub,124,455,880,34,P.gold,800,1.2);bullets(s.bullets,125,610,820,26);drawImageBox(s.images?.[0],1050,225,390,420,'Prototype photo from 5.17 assets');}
+function normal(s){ bg(s.part); wrap(s.title,70,128,1260,50,P.text,900,1.15); const textW=s.images||s.chart||s.diagram?720:1340; bullets(s.bullets,80,245,textW,28); if(s.layout==='photos') photos(s.images,870,210,610,520); else if(s.layout==='quad') quad(s.images,840,190,680,550); else if(s.layout==='triptych') triptych(s.images,830,205,690,520); else if(s.images) drawImageBox(s.images[0],870,230,590,430,'5.17 image asset'); if(s.diagram) diagram(s.diagram,865,225,610,500,s); if(s.chart) chart(s,870,235,610,460); footer(); }
+function drawImageBox(src,x,y,w,h,cap){ rr(x,y,w,h,26,'rgba(255,255,255,.08)'); const im=img(src); if(im&&im._failed){ ctx.fillStyle=P.red; ctx.font='700 21px Inter'; wrap('Image not found\n'+src,x+28,y+h/2-20,w-56,18,P.red,700,1.2); } else if(im&&im.complete&&im.naturalWidth){ const r=Math.min((w-34)/im.naturalWidth,(h-58)/im.naturalHeight); const iw=im.naturalWidth*r, ih=im.naturalHeight*r; ctx.drawImage(im,x+(w-iw)/2,y+18,iw,ih); } else { ctx.fillStyle=P.muted; ctx.font='700 24px Inter'; ctx.fillText('Loading image…',x+34,y+h/2); } ctx.fillStyle=P.muted; ctx.font='650 17px Inter'; ctx.fillText(cap||'',x+26,y+h-22); }
+function photos(srcs,x,y,w,h){srcs.forEach((src,i)=>drawImageBox(src,x+i*(w/2+18),y,w/2-18,h,i?'Internal view':'External view'));}
+function quad(srcs,x,y,w,h){srcs.forEach((src,i)=>{const cw=w/2-12,ch=h/2-12;drawImageBox(src,x+(i%2)*(cw+24),y+Math.floor(i/2)*(ch+24),cw,ch,'');});}
+function triptych(srcs,x,y,w,h){srcs.forEach((src,i)=>drawImageBox(src,x+i*(w/3+13),y,w/3-13,h,['Equipment','Wearing setup','Train context'][i]||''));}
+function arrow(x1,y1,x2,y2,c=P.cyan){ctx.strokeStyle=c;ctx.fillStyle=c;ctx.lineWidth=5;ln(x1,y1,x2,y2);const a=Math.atan2(y2-y1,x2-x1);ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-18*Math.cos(a-.45),y2-18*Math.sin(a-.45));ctx.lineTo(x2-18*Math.cos(a+.45),y2-18*Math.sin(a+.45));ctx.closePath();ctx.fill();}
+function diagram(type,x,y,w,h,s){ rr(x,y,w,h,28,'rgba(255,255,255,.07)'); ctx.save();ctx.translate(x,y);
+ if(type==='hierarchy'){['Sedentary\nbehaviour','Prolonged\nsitting','Static bout /\nMovement within bout'].forEach((t,i)=>{rr(70+i*165,170+i*32,220,95,22,rgba([P.blue,P.cyan,P.gold][i],.18));wrap(t,95+i*165,210+i*32,175,24,P.text,850,1.1); if(i<2) arrow(285+i*165,218+i*32,325+i*165,245+i*32);});}
+ if(type==='timeline'){['Bout A: nearly static','Bout B: with pelvic movements'].forEach((t,row)=>{ctx.fillStyle=P.text;ctx.font='800 25px Inter';ctx.fillText(t,55,110+row*190);arrow(80,155+row*190,520,155+row*190,row?P.cyan:P.blue);for(let i=0;i<(row?8:2);i++){ctx.fillStyle=row?P.gold:P.red;ctx.beginPath();ctx.arc(140+i*(row?47:230),155+row*190,12,0,Math.PI*2);ctx.fill();}});}
+ if(type==='techgrid'){['Camera','Chair\nCushion','Body-worn','Research\nIMU','MCU IMU'].forEach((t,i)=>{rr(42+(i%3)*175,80+Math.floor(i/3)*180,145,120,22,rgba([P.blue,P.cyan,P.gold,P.green,P.red][i],.16));wrap(t,65+(i%3)*175,130+Math.floor(i/3)*180,100,22,P.text,850,1.1);});}
+ if(type==='boundary'||type==='support'){['Supported','Not established'].forEach((t,i)=>{rr(70+i*280,110,220,250,26,rgba(i?P.red:P.green,.15));ctx.fillStyle=i?P.red:P.green;ctx.font='850 30px Inter';ctx.fillText(t,100+i*280,165);wrap(i?'Clinical proof\nLong-term use\nBehaviour change':'Prototype\nTrend sensing\nPilot detection',100+i*280,225,165,23,P.text,750,1.25);});}
+ if(type==='objectives'){['O1\nBuild','O2\nCompare','O3\nDetect + Deploy'].forEach((t,i)=>{rr(70+i*170,170,135,115,22,rgba([P.blue,P.cyan,P.gold][i],.18));wrap(t,98+i*170,213,90,24,P.text,850,1.1);if(i<2)arrow(210+i*170,228,235+i*170,228);});}
+ if(type==='pipeline'){['Sense','Log','Train','Deploy','Cue'].forEach((t,i)=>{rr(40+i*110,210,85,85,18,rgba([P.blue,P.cyan,P.gold,P.green,P.red][i],.18));ctx.fillStyle=P.text;ctx.font='800 21px Inter';ctx.fillText(t,54+i*110,260);if(i<4)arrow(128+i*110,253,148+i*110,253);});}
+ if(type==='comparison'){wrap('Co-located\nshared input',70,150,190,26,P.text,850,1.15);wrap('Field-worn\nP1/P2 usable',350,150,190,26,P.text,850,1.15);arrow(250,195,335,195);ctx.fillStyle=P.gold;ctx.font='800 25px Inter';ctx.fillText('Trend-level only',210,360);}
+ if(type==='mlflow'){['2 s windows','Features','Model compare','P5 test','Compact KNN'].forEach((t,i)=>{rr(45+i*105,190,88,105,18,rgba([P.blue,P.cyan,P.gold,P.green,P.red][i],.15));wrap(t,58+i*105,230,64,19,P.text,800,1.08);if(i<4)arrow(135+i*105,242,148+i*105,242);});}
+ if(type==='dataset'){const labs=['Collected field logs','Quality + label boundary','Retained binary windows','P1–P4 train / P5 test'];labs.forEach((t,i)=>{rr(80,75+i*95,450,60,16,rgba([P.blue,P.cyan,P.gold,P.green][i],.15));ctx.fillStyle=P.text;ctx.font='800 23px Inter';ctx.fillText(t,110,114+i*95);if(i<3)arrow(305,137+i*95,305,165+i*95);});}
+ if(type==='firmware'){drawMetric(65,90,'2.73 ms','per 2 s window');drawMetric(330,90,'<0.15%','CPU');drawMetric(65,230,'56.3 KB','Flash');drawMetric(330,230,'9.3 KB','RAM');drawMetric(195,370,'10 min → 1 s','haptic cue');}
+ if(type==='final'){wrap('Technical feasibility demonstrated',80,120,450,36,P.cyan,900,1.2);wrap('Low-cost wearable\n+ labelled data collection\n+ compact embedded detection\n+ local haptic cue',100,235,390,28,P.text,750,1.28);}
+ ctx.restore(); }
+function drawMetric(x,y,a,b){rr(x,y,205,84,18,'rgba(255,255,255,.09)');ctx.fillStyle=P.gold;ctx.font='850 31px Inter';ctx.fillText(a,x+20,y+36);ctx.fillStyle=P.muted;ctx.font='700 18px Inter';ctx.fillText(b,x+20,y+64);}
+function chart(s,x,y,w,h){ rr(x,y,w,h,28,'rgba(255,255,255,.07)'); ctx.save();ctx.translate(x,y); if(s.chart==='range'||s.chart==='range2'){s.values.forEach((v,i)=>{const yy=125+i*135;ctx.fillStyle=P.text;ctx.font='850 25px Inter';ctx.fillText(v[0],55,yy);const bx=230,bw=310;ctx.fillStyle='rgba(255,255,255,.12)';ctx.fillRect(bx,yy-27,bw,36);ctx.fillStyle=[P.cyan,P.gold][i%2];ctx.fillRect(bx+bw*v[1],yy-27,bw*(v[2]-v[1]),36);ctx.fillStyle=P.muted;ctx.font='750 22px Inter';ctx.fillText(`${v[1].toFixed(3)}–${v[2].toFixed(3)}`,bx,yy+45);});}
+ if(s.chart==='models'){s.values.forEach((v,i)=>{const bx=70+i*100,bh=300*v[1]/.98;ctx.fillStyle=[P.blue,P.cyan,P.gold,P.green,P.red][i];ctx.fillRect(bx,370-bh,60,bh);ctx.fillStyle=P.text;ctx.font='800 20px Inter';ctx.textAlign='center';ctx.fillText(v[0],bx+30,407);ctx.fillText(v[1].toFixed(3),bx+30,350-bh);});ctx.textAlign='left';}
+ if(s.chart==='confusion'){const vals=[[3493,4],[10,155]],x0=145,y0=80,c=145;ctx.fillStyle=P.muted;ctx.font='800 22px Inter';ctx.fillText('Predicted',250,55);vals.forEach((row,r)=>row.forEach((v,col)=>{rr(x0+col*c,y0+r*c,c-8,c-8,18,col===r?'rgba(69,224,206,.22)':'rgba(255,107,122,.22)');ctx.fillStyle=P.text;ctx.font='850 36px Inter';ctx.textAlign='center';ctx.fillText(v,x0+col*c+c/2-4,y0+r*c+82);}));ctx.textAlign='left';ctx.fillStyle=P.gold;ctx.font='850 25px Inter';ctx.fillText('Full KNN F1 = 0.957',155,405);}
+ ctx.restore(); }
+function footer(){ctx.fillStyle='rgba(255,255,255,.55)';ctx.font='650 18px Inter';ctx.fillText('Source material: 5.17ppt整理',70,H-45);ctx.textAlign='right';ctx.fillText(`${current+1} / ${slides.length}`,W-70,H-45);ctx.textAlign='left';}
+function render(){const s=slides[current]; if(s.layout==='title') title(s); else normal(s); document.getElementById('notes').textContent=`Speaker notes: ${s.note}`; document.querySelectorAll('.thumb').forEach((b,i)=>b.setAttribute('aria-current',i===current));}
+function thumbs(){const box=document.getElementById('thumbs');slides.forEach((s,i)=>{const b=document.createElement('button');b.className='thumb';b.innerHTML=`<span class="no">${String(i+1).padStart(2,'0')}</span><span class="tt">${s.part}${s.backup?' · backup':''}<br>${s.title.replace(/\n/g,' ')}</span>`;b.onclick=()=>{current=i;render();};box.appendChild(b);});}
+function next(){current=Math.min(slides.length-1,current+1);render();} function prev(){current=Math.max(0,current-1);render();}
+function exportPng(){try{const a=document.createElement('a');a.download=`5-17-canvas-ppt-slide-${String(current+1).padStart(2,'0')}.png`;a.href=canvas.toDataURL('image/png');a.click();}catch(err){document.getElementById('notes').textContent='导出失败：请从仓库根目录运行 python3 -m http.server 8000 后访问 http://localhost:8000/canvas_ppt/ 再导出。'; console.error(err);}}
+document.getElementById('next').onclick=next; document.getElementById('prev').onclick=prev; document.getElementById('export').onclick=exportPng; document.getElementById('fullscreen').onclick=()=>document.querySelector('.stage').requestFullscreen?.();
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key===' ')next(); if(e.key==='ArrowLeft')prev(); if(e.key.toLowerCase()==='f')document.querySelector('.stage').requestFullscreen?.(); if(e.key.toLowerCase()==='e')exportPng();});
+thumbs(); render();
+</script>
+</body>
+</html>
